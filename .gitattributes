@@ -1,0 +1,13 @@
+# Line endings: LF in the repo AND in every checkout (WSL and Windows git alike).
+#
+# Why: this clone lives on /mnt/d (NTFS under WSL) and was first checked out
+# with CRLF working files over an LF index — 47 of 51 tracked files showed as
+# "modified" with whitespace-only diffs, and the CRLF was not cosmetic:
+# `scripts/pneumatic-shim.sh` began `#!/usr/bin/env bash\r`, which WSL bash
+# cannot exec, and justfile recipes carried `\r` into their shell lines.
+# Added 2026-11-12 by the founding seat, approved by the project human.
+* text=auto eol=lf
+
+# Windows-native script formats keep CRLF (none exist yet; future-proofing).
+*.bat text eol=crlf
+*.cmd text eol=crlf

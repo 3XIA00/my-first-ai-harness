@@ -7,7 +7,8 @@
     "base_dir": "~/.claude/projects"
   },
   "_colors_in_use": {
-    "_comment": "Optional but recommended: track seat colors to avoid collisions. Claude Code's /color command accepts: red, blue, green, yellow, purple, orange, pink, cyan, default."
+    "_comment": "Optional but recommended: track seat colors to avoid collisions. Claude Code's /color command accepts: red, blue, green, yellow, purple, orange, pink, cyan, default.",
+    "orange": "saddler (#A0522D)"
   },
   "_global": {
     "_comment": "Optional defaults for `just launch`'s claude invocation; per-seat settings override. Global-only (no per-seat form): agents, remote_control_session_name_prefix. Anything unset is omitted from the command (Claude's own defaults apply).",
@@ -19,7 +20,7 @@
   "groups": {
     "_comment": "Role-based groups for inbox addressing. `just broadcast <from> <slug> [group]` writes a -to-<group>- brief; `just wait-for-brief <alias>` wakes on briefs addressed to any group the alias belongs to. Members are alias keys from 'aliases' below (validated by `just groups`).",
     "crew": {
-      "members": [],
+      "members": ["saddler"],
       "description": "All active participants. Broadcasts addressed to 'crew' wake every seat. Add alias keys to 'members' as seats register."
     }
   },
@@ -68,8 +69,25 @@
         ],
         "_launch_cmd_note": "The -c flag suppresses Codex's startup update check — its interactive update dialog boots BEFORE the composer and has eaten unattended launches (pneumatic ADR-0039, 'boot gates are weather'). Sandbox/approval/network flags are deliberately NOT in this sample: they are per-seat judgment calls with real security surface — pneumatic's recruit composes the narrow, probe-verified shapes (socket and submodule exceptions) when founding; copy from a live row only with its reasoning.",
         "busy_marker": "esc to interrupt",
-        "prompt_prefix": "\u00bb"
+        "prompt_prefix": "»"
       }
+    },
+    "saddler": {
+      "uuid": "7c260c87-51f1-4399-bb17-4acf54987793",
+      "role": "Founding seat & co-builder — designs and builds this project's AI harness side by side with the human, who is learning harness-building (MCP-experienced, first harness build); explains the why behind each piece as it lands",
+      "display_name": "Saddler 5.5",
+      "color": "orange",
+      "color_note": "Saddle-leather sienna: a saddler is the craftsperson who makes harnesses, and the hex is the color of the material.",
+      "model": "claude-opus-5-5",
+      "model_note": "Seat founded 2026-11-12 by claude-opus-5-5 (first occupant), consenting via the porthole chair recruit-20261112234604. Requested at founding as 'claude-opus-5-5[1m]' (ADR-0020); JSONL-verified claude-opus-5-5 at founding — the [1m] context variant is not self-verifiable from inside the session.",
+      "registered": "2026-11-12",
+      "settings": {
+        "color_hex": "#A0522D",
+        "substrate_backstop": "off"
+      },
+      "founding_brief": "/mnt/d/CIS MSE/7000/my-first-ai-harness/docs/inbox/2026-11-12-2332-founding-brief-interactive.md",
+      "founded_by": "the project's human + crew",
+      "founded": "2026-11-12"
     }
   }
 }

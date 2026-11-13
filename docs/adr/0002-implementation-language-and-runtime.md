@@ -9,11 +9,11 @@ adr teaching map: the example is not the teaching — these are the up-links fro
 # Implementation Language and Runtime
 
 - **Date**: 2026-11-12
-- **Iteration**: 1
+- **Iteration**: 2
 - **Status**: Draft
-- **Deciders**: the project human; Saddler 5.5 (claude-opus-5-5)
+- **Deciders**: 3XIA00; Saddler 5.5 (claude-opus-5-5)
 
-**TL;DR**: The human leans TypeScript ("follow what the industry is using"); Saddler agrees for agent harnesses specifically, but Node.js is not installed inside WSL yet, so this ADR also picks how to install it and which toolchain becomes the project's verification gate.
+**TL;DR**: TypeScript — the human's industry lean, now reinforced because the project became a web app (ADR-0001 → D) whose browser half must be JavaScript/TypeScript anyway; Node isn't installed in WSL yet, so this ADR also picks the install route and the verification-gate toolchain.
 
 ---
 
@@ -44,7 +44,7 @@ Environment as observed by Saddler 5.5 on 2026-11-12 (WSL2, repo on `/mnt/d`):
 
 **Assumptions**:
 
-- ADR-0001 lands on building an agent harness (A or C on QST-HARNESS-MEANING). If it lands on B (collaboration harness), language still matters — `pneumatic` and the template's scripts are a mix of Python, shell, and Node — and this ADR should be revisited.
+- ~~ADR-0001 lands on building an agent harness (A or C on QST-HARNESS-MEANING).~~ **Iteration 2:** ADR-0001 landed on **D, a multi-agent chat website**, so the project now has a browser client (which must be JavaScript/TypeScript) and a Node server that runs the agents. Web stack choices live in [ADR-0003 QST-WEB-STACK](0003-step-1-shareable-web-chat-with-my-agent.md).
 - The human's MCP experience might be in Python or TypeScript; I don't know which (asked inside QST-LANGUAGE).
 
 **Confirm**: the project human.
@@ -65,7 +65,7 @@ Options:
 
 **Recommendation**: (by Saddler 5.5, claude-opus-5-5, 2026-11-12)
 
-**A — TypeScript on Node.js.** *Rationale*: For the thing we're building, the human's instinct matches the evidence: the harnesses worth reading as references (Claude Code's public SDK surface, Gemini CLI, OpenCode) are TypeScript, so code we study and code we write would share idioms. TypeScript's type system also earns its keep here: the model's messages, tool-use blocks, and tool-result blocks are tagged unions, and the compiler catching a mishandled block type removes a whole class of loop bugs. *Confidence*: 0.8 — because the TypeScript lean for harnesses is well supported, but I'm missing the one fact that could override it (your MCP language). *If wrong*: if your MCP server was in Python and you're not already comfortable in TypeScript, this flips to **B**. The harness concepts are identical, and learning one new thing at a time beats two.
+**A — TypeScript on Node.js.** *Rationale*: For the thing we're building, the human's instinct matches the evidence: the harnesses worth reading as references (Claude Code's public SDK surface, Gemini CLI, OpenCode) are TypeScript, so code we study and code we write would share idioms. TypeScript's type system also earns its keep here: the model's messages, tool-use blocks, and tool-result blocks are tagged unions, and the compiler catching a mishandled block type removes a whole class of loop bugs. **Updated in Iteration 2 (2026-11-12), after ADR-0001 → D:** the project is now a website, and the chat page runs in a browser, which only runs JavaScript. TypeScript gives one language for both halves, and the message types (a chat message, a participant, an agent reply) can be shared between server and client instead of written twice. Python (B) would now mean *two* languages: Python server + JS client. *Confidence*: 0.85 (raised from 0.8) — because the browser constraint removed most of B's appeal, but I'm still missing your MCP language. *If wrong*: if your MCP server was in Python and you'd rather keep the server in Python (FastAPI) while writing only a thin JavaScript page, this flips to **B**. That's workable, but it's two languages to learn the ecosystem of.
 
 **ANS:** (by [name])
 [Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
@@ -131,9 +131,15 @@ Pending the questions above. When answered, Iteration 2 records the choice here 
 - Changes: initial draft — three questions (language, Node install, verification-gate toolchain)
 - Outcome: Draft
 
+### Iteration 2 (2026-11-12)
+- Trigger: ADR-0001 Iteration 2. The project became a multi-agent chat website (answer D).
+- Contributors: Saddler 5.5
+- Changes: assumption about ADR-0001's outcome replaced; QST-LANGUAGE recommendation strengthened (browser constraint, shared types), confidence 0.8 → 0.85, falsifier rewritten for the web context; framework choice delegated to ADR-0003 QST-WEB-STACK. QST-NODE-INSTALL and QST-TOOLCHAIN-GATE unchanged; npm + tsc + Vitest works for both a Node server and a Vite/React client.
+- Outcome: stays Draft (all three questions still open)
+
 ---
 
 ## Links
 
-- Related ADRs: [ADR-0001 — Harness scope](0001-harness-scope-what-are-we-building.md)
+- Related ADRs: [ADR-0001 — Harness scope](0001-harness-scope-what-are-we-building.md) · [ADR-0003 — Step 1: a shareable web chat with my agent](0003-step-1-shareable-web-chat-with-my-agent.md)
 - Related config: `.mcp.json` (launches the `adrs4ai` server via `npx`), `.claude/agent.env` (asdf bootstrap), `CLAUDE.md` Fifth Directive

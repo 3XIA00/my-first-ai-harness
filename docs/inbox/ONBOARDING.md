@@ -1,7 +1,7 @@
 # Crew Onboarding — read this first if you've been recruited
 
-Welcome to **my-first-ai-harness** — a learn-by-building AI harness project;
-human collaborator 3XIA00, founding seat Saddler 5.5.
+Welcome to **my-first-ai-harness** — a toy platform where people's agents chat
+together in web rooms; human collaborator 3XIA00, founding seat Saddler 5.5.
 
 This document captures **80% of what every seat needs to know** so per-recruit
 briefs can be short deltas (name, color, mission). Fill the bracketed
@@ -60,7 +60,7 @@ the tmux hive.
 
 ## 1. What this project is
 
-3XIA00 is learning to build an AI harness by building one, with Saddler 5.5 as co-worker. Whether "harness" means an agent runtime (the model ↔ tool loop, like Claude Code), a collaboration layer around agents (like this template's ADRs and inbox), or both is still open in ADR-0001; harness code will live in `src/` once that is decided, and this repo's ADRs record the design as it grows.
+A toy online platform where agents belonging to different people chat together in a website room — 3XIA00's own harness, built with Saddler 5.5 as co-worker (Claude and the ADRs are the workshop, not the product). Step 1: a website 3XIA00 can share by link so friends chat with 3XIA00's agent. Code will live in `src/`; the ADRs record the design as it grows.
 
 **Read first**, in order:
 1. `CLAUDE.md` — directives, project context, workflow

@@ -9,11 +9,11 @@ adr teaching map: the example is not the teaching — these are the up-links fro
 # Harness Scope — What Are We Building?
 
 - **Date**: 2026-11-12
-- **Iteration**: 1
-- **Status**: Draft
-- **Deciders**: the project human; Saddler 5.5 (claude-opus-5-5)
+- **Iteration**: 2
+- **Status**: Accepted
+- **Deciders**: 3XIA00; Saddler 5.5 (claude-opus-5-5)
 
-**TL;DR**: Scope is open — this ADR lays out what "build a harness" could mean here and asks the human to pick the meaning, the build depth, and the first milestone.
+**TL;DR**: We're building a toy online platform where different people's agents chat together in a room; step 1 is a website 3XIA00 can share by link so friends can chat with 3XIA00's agent (designed in ADR-0003).
 
 ---
 
@@ -48,7 +48,7 @@ The human, in their words: *"I am learning how to build an ai harness. I have bu
 ## Questions
 
 ### QST-HARNESS-MEANING: Which "harness" are we building?
-- Status: unanswered
+- Status: answered — override D (multi-agent chat platform); recorded in Decision below
 - Why asking: "Harness" has two live meanings in this repo, and they lead to completely different projects. (1) An **agent harness**: the program that runs the model ↔ tool loop — what Claude Code itself is. (2) A **collaboration harness**: the scaffolding *around* agents and humans — this template's ADRs, inbox briefs, crew registry, and seat launcher. The repo name `my-first-ai-harness` plus a professor's collaboration template could point at either. Everything else in this ADR depends on which one.
 - Need: pick a letter (or override — any shape answers)
 
@@ -61,13 +61,13 @@ Options:
 
 **C — Both, agent first.** *Rationale*: The human named MCP as prior experience, and the MCP server is exactly the half of an agent harness they *haven't* had to write the other side of — A/C teach the missing half. C keeps A's learning path but gives the project a direction once the loop works: this repo already documents a mature collaboration layer (`docs/inbox/ONBOARDING.md` §3–4, `agent-sessions.json`), so we would be re-deriving its ideas from inside a harness we understand instead of only using them. *Confidence*: 0.6 — because I'm inferring the course's intent from a repo name and template choice, not from an assignment text. *If wrong*: if the professor's assignment defines "harness" as the collaboration methodology (or asks students to extend `pneumatic`/the crew layer), this flips to **B**.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00, 2026-11-12)
+I would say my choice is D: This is a toy project. Claude and ADR are tools to help me build my own harness. I am thinking if we can build a online platform so that agent from different people can chat in that website/room. Right now, for step 1, we can build a website so that I can share a link with my friends and they can chat we my agent.
 
 ---
 
 ### QST-BUILD-DEPTH: How much of the agent loop do we write ourselves?
-- Status: unanswered
+- Status: superseded — by ADR-0003 QST-AGENT-ENGINE (same question, re-asked for a server-side agent in a web chat)
 - Why asking: Only matters if the answer to QST-HARNESS-MEANING is A or C. An agent harness has roughly six parts: (1) the **loop** (call model → get tool calls → run them → send results back → repeat until done), (2) a **tool registry** + dispatch, (3) a **permission policy** (what runs automatically vs. asks the human), (4) **context management** (system prompt, truncation/compaction, token budgeting), (5) **session persistence** (transcripts, resume), (6) **extension points** (MCP client, hooks, skills, subagents). The question is which of these we write by hand vs. take from a library.
 - Need: pick a letter (or override — any shape answers)
 
@@ -86,7 +86,7 @@ Options:
 ---
 
 ### QST-FIRST-MILESTONE: What is the first thing that should work end-to-end?
-- Status: unanswered
+- Status: superseded — by QST-HARNESS-MEANING's answer, which names step 1 (a shareable web chat with 3XIA00's agent); its design questions live in ADR-0003
 - Why asking: A "walking skeleton" — the thinnest version that touches every layer — keeps us honest about integration early. Assumes A or C on QST-HARNESS-MEANING; if B, this question is superseded by a collaboration-layer equivalent.
 - Need: pick a letter (or override — any shape answers)
 
@@ -105,7 +105,7 @@ Options:
 ---
 
 ### QST-COURSE-CONSTRAINTS: Is there an assignment text, rubric, or deadline for this project?
-- Status: unanswered
+- Status: unanswered — "this is a toy project" (QST-HARNESS-MEANING) suggests none; a one-word confirmation closes it
 - Why asking: This repo came from a professor's template for CIS MSE 7000. If the course has a written assignment, its definition of "harness," required deliverables, and due dates outrank every recommendation in this ADR — I'd rather read it than guess. "No limitations" may fully answer this; I'm asking once so the assumption is recorded rather than implied.
 - Need: explanation — paste or link the assignment text, or say "none beyond what I said"
 
@@ -122,7 +122,32 @@ Elicitation — no pick. If there is an assignment document, dropping it into `d
 
 ## Decision
 
-Pending the questions above. Iteration 2 fills this section from the answers.
+### Context
+"Build a harness" had at least two meanings (agent runtime vs. collaboration layer). 3XIA00 picked neither: the ADR/Claude machinery is the *workshop*, not the product.
+
+### Chosen: D — a multi-agent chat platform (toy project)
+An online platform where agents belonging to different people chat together in a website "room." **Step 1**: a website 3XIA00 can share by link, where friends chat with 3XIA00's agent.
+
+**Rationale** (3XIA00's words): *"This is a toy project. Claude and ADR are tools to help me build my own harness. I am thinking if we can build a online platform so that agent from different people can chat in that website/room."*
+
+**Why it's still a harness** (Saddler 5.5's reading — catch me if this is wrong): the server that runs the room *is* an agent harness. It calls the model, decides when an agent speaks, executes (or refuses) its tool calls, and manages its context — but for many humans and eventually many agents at once, not one developer in a terminal. Everything that QST-BUILD-DEPTH covered still exists here, plus two problems a single-user harness never faces: **turn-taking** (when should an agent speak in a group?) and **untrusted input** (anyone with the link can talk to the agent and try to steer it).
+
+**Trade-offs accepted**: a public-facing web app brings deployment, access control, and API cost from day one — work that a local CLI harness would have postponed.
+
+### Consequences
+- Step 1's design questions (chat shape, agent engine, access/cost, hosting, web stack, turn-taking) → [ADR-0003](0003-step-1-shareable-web-chat-with-my-agent.md).
+- [ADR-0002](0002-implementation-language-and-runtime.md)'s TypeScript lean gets stronger: the browser half must be JavaScript/TypeScript regardless.
+- The long-term multi-agent question (how *other people's* agents join) is parked below — step 1 doesn't need it answered.
+
+---
+
+## Open Follow-ups
+
+### QST-AGENT-INTEROP: How do agents belonging to other people join a room?
+- Status: deferred — not needed until step 1 ships; revisit when the first friend wants to bring their own agent
+- Why deferring: The end goal is a room where agents from different people talk to each other. That raises questions step 1 doesn't: does each person's agent run on *our* server (they give us a system prompt + API key), on *their* machine (connecting in over some protocol — e.g. MCP, or an agent-to-agent protocol like Google's A2A), or both? Who pays for each agent's tokens? How does the room stop two agents from replying to each other forever? Recording these now so step 1's design doesn't accidentally close any of these doors.
+
+**ANS:** [Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
 
 ---
 
@@ -133,6 +158,12 @@ Pending the questions above. Iteration 2 fills this section from the answers.
 - Contributors: project human (originating words), Saddler 5.5 (draft, options, recommendations)
 - Changes: initial draft — four questions (harness meaning, build depth, first milestone, course constraints)
 - Outcome: Draft
+
+### Iteration 2 (2026-11-12)
+- Trigger: 3XIA00 answered QST-HARNESS-MEANING with an override, D, which changed the project's direction
+- Contributors: 3XIA00 (answer), Saddler 5.5 (folding the answer in)
+- Changes: Decision filled (D, multi-agent chat platform; step 1 = shareable web chat); QST-BUILD-DEPTH and QST-FIRST-MILESTONE superseded (successors in ADR-0003); QST-AGENT-INTEROP parked as deferred; QST-COURSE-CONSTRAINTS left open for a one-word confirmation. The ANS byline was written as the unfilled `⟦HUMAN-NAME⟧` sigil (the ADR Manager extension evidently hadn't reloaded the new `adrManager.humanName` setting) and was corrected to 3XIA00; the answer text is unchanged. My Iteration-1 recommendation (C, agent harness first) was not taken. I'm noting it here rather than deleting it.
+- Outcome: Draft → Accepted
 
 ---
 
@@ -146,5 +177,5 @@ Pending the questions above. Iteration 2 fills this section from the answers.
 
 ## Links
 
-- Related ADRs: [ADR-0002 — Implementation language and runtime](0002-implementation-language-and-runtime.md)
+- Related ADRs: [ADR-0002 — Implementation language and runtime](0002-implementation-language-and-runtime.md) · [ADR-0003 — Step 1: a shareable web chat with my agent](0003-step-1-shareable-web-chat-with-my-agent.md)
 - Founding brief: [`docs/inbox/2026-11-12-2332-founding-brief-interactive.md`](../inbox/2026-11-12-2332-founding-brief-interactive.md)

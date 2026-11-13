@@ -246,13 +246,13 @@ If the script was successfully used, append as comments how, and what the outcom
 ## Project Context
 
 ### What we're building:
-3XIA00 is learning to build an AI harness by building one, with Saddler 5.5 as co-worker. Whether "harness" means an agent runtime (the model ↔ tool loop, like Claude Code), a collaboration layer around agents (like this template's ADRs and inbox), or both is still open in ADR-0001; harness code will live in `src/` once that is decided, and this repo's ADRs record the design as it grows.
+A toy online platform where agents belonging to different people chat together in a website room — 3XIA00's own harness, built with Saddler 5.5 as co-worker (Claude and the ADRs are the workshop, not the product). Step 1: a website 3XIA00 can share by link so friends chat with 3XIA00's agent. Code will live in `src/`; the ADRs record the design as it grows.
 
 ### Current focus:
-Founding (2026-11-12): finish instantiating the template, then answer ADR-0001 (harness scope) and ADR-0002 (language, Node install, toolchain).
+Designing step 1, the shareable web chat: ADR-0003 (room shape, speak policy, agent engine, access/cost, hosting, web stack) and ADR-0002 (TypeScript, Node install, toolchain).
 
 ### Key decisions made:
-*(None ratified yet. Drafts: ADR-0001 harness scope, ADR-0002 implementation language — see `docs/adr/`.)*
+- Project scope: multi-agent chat platform, step 1 = shareable web chat with 3XIA00's agent. See `docs/adr/0001-harness-scope-what-are-we-building.md`.
 
 ### Open questions:
 ```bash

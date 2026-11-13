@@ -526,6 +526,7 @@ gate:
     set -euo pipefail
     just instantiate-check
     python3 scripts/groups-lookup.py --validate
+    python3 -m unittest discover -s tests -q
     # ADD YOUR PROJECT'S OWN GATE HERE when it exists (test suite, build, linter)
     echo "✅ gate green (day-one checks; project gate slot above)"
 

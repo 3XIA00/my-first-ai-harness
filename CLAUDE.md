@@ -1,19 +1,9 @@
 # CLAUDE.md - Project Guidance
 
-> **Instantiating this template?** Placeholders look like ⟦THIS⟧ — fill-and-delete
-> each one (grep-proof on purpose; `just instantiate-check` reports which remain
-> and passes only when none do). Square-bracket text elsewhere is either a
-> per-document mold slot (filled at each mint, not at birth) or the frozen
-> dialogue placeholder `[Fill this in]` — never convert those. *(This note is
-> visible text, not an HTML comment, because the harness strips block comments
-> from the CLAUDE.md it serves at session start — a cold instantiator proved the
-> instructions were sitting exactly where their audience could not see them.
-> Delete this block when instantiation is done.)*
-
-- **Project**: ⟦PROJECT-NAME⟧
-- **Human**: ⟦HUMANS⟧
-- **AI**: ⟦AI-SEATS⟧ <!-- with the crew layer, the roster lives in docs/inbox/agent-sessions.json; name the coordinator seat here -->
-- **Last Updated**: ⟦LAST-UPDATED⟧
+- **Project**: my-first-ai-harness
+- **Human**: 3XIA00
+- **AI**: Saddler 5.5 (claude-opus-5-5) — founding seat and coordinator; full roster in `docs/inbox/agent-sessions.json`
+- **Last Updated**: 2026-11-12
 
 ---
 
@@ -98,15 +88,15 @@ Tests should:
 **RUN THIS PROJECT'S VERIFICATION GATE BEFORE EVERY COMMIT**
 
 Before serving any change:
-1. Run the project's verification gate: ⟦VERIFICATION-GATE⟧ <!-- test suite, build, linter, or a combination; e.g. `npm test`, `uv run pytest`, `hugo && bin/check` -->
+1. Run the project's verification gate: `just gate`
 2. Fix any failures before committing
 3. Never serve changes with a failing gate
 
-**Why**: ⟦GATE-WHY⟧ <!-- state what this project's gate actually catches — real classes of bug, real numbers if you have them. A directive that names a real gate gets followed; an unfollowable one teaches every seat that directives are decorative, and that lesson generalizes. -->
+**Why**: Today the repo holds only the template's own machinery, so the gate checks what can actually break: (1) `just instantiate-check` — unfilled ⟦…⟧ placeholders and leftover template-only files; (2) `groups-lookup.py --validate` — a malformed `docs/inbox/agent-sessions.json` or a group naming a nonexistent seat, which silently breaks `just wait-for-brief` / `just brief` routing; (3) `tests/` — the registry readers' UTF-8 regression (they crashed on non-UTF-8 Windows locales, which matters on this WSL + Windows machine). When the harness code lands, its typecheck + test command joins `just gate` (pending ADR-0002 QST-TOOLCHAIN-GATE) — the directive's command stays `just gate`.
 
 **Process**:
 ```bash
-⟦VERIFICATION-GATE⟧            # Must be green before commit
+just gate                      # Must be green before commit
 git add <explicit paths>       # never -A: stage by path, commit by pathspec — see CONVENTIONS.md, shared-worktree awareness
 git commit -m "..." -- <paths>
 ```
@@ -256,13 +246,13 @@ If the script was successfully used, append as comments how, and what the outcom
 ## Project Context
 
 ### What we're building:
-⟦PROJECT-GOAL⟧ <!-- 1-3 sentences; same token as ONBOARDING's — one text serves both -->
+3XIA00 is learning to build an AI harness by building one, with Saddler 5.5 as co-worker. Whether "harness" means an agent runtime (the model ↔ tool loop, like Claude Code), a collaboration layer around agents (like this template's ADRs and inbox), or both is still open in ADR-0001; harness code will live in `src/` once that is decided, and this repo's ADRs record the design as it grows.
 
 ### Current focus:
-⟦CURRENT-FOCUS⟧
+Founding (2026-11-12): finish instantiating the template, then answer ADR-0001 (harness scope) and ADR-0002 (language, Node install, toolchain).
 
 ### Key decisions made:
-*(List ADRs here as they land, e.g. `- Auth approach — see docs/adr/0001-*.md`. Empty at birth is healthy.)*
+*(None ratified yet. Drafts: ADR-0001 harness scope, ADR-0002 implementation language — see `docs/adr/`.)*
 
 ### Open questions:
 ```bash

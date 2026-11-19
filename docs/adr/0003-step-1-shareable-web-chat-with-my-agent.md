@@ -259,6 +259,25 @@ C at low
 
 ---
 
+### QST-AGENT-HOSTED: With an API key in hand, should phase 1 drop the listener and run the agent inside the room server?
+- Status: unanswered
+- Why asking: 3XIA00 asked in chat (2026-11-19): *"Since we are using a openrouter api key, does it mean that we dont need the agent to run a listener any more? we can simply setup a room and when there is a message, send a message to model through api?"* There are two separate links here. **Agent → model** (how the agent thinks) uses the OpenRouter key either way. **Room → agent** (how the agent learns a message arrived) is what the listener is for, and whether we need one depends on **where the agent runs**, not on the key. If the agent lives *inside* the room server, the server already sees every message and calls OpenRouter itself: no listener, no MCP in phase 1. That is QST-AGENT-CONNECTION's option A, which 3XIA00 answered B. This question re-asks it with the key now decided. M1 (humans-only chat) is identical either way, so this doesn't block starting.
+- Need: pick a letter (or override — any shape answers)
+
+Options:
+- **A — Keep the listener (agent on your PC, MCP from phase 1)**: as decided in QST-AGENT-CONNECTION. Phase 1 builds the MCP endpoint (M2) and the agent-side harness on your PC (M3). Your agent replies only while your PC runs it. The OpenRouter key stays on your PC.
+- **B — Hosted agent for phase 1, MCP later**: the room server calls OpenRouter when a friend writes; M2 and M3 shrink to "add an agent participant to the server". Your agent is up whenever the site is, even with your PC off. The key moves to Render as a secret setting. MCP and the agent-on-your-PC listener get built later, when the first agent from *outside* joins (the final phase), and your agent may move out then.
+- **C — Both, hosted first**: B for phase 1, but write the agent behind the same "participant" interface MCP agents will use, then build MCP in phase 2 while your agent is still hosted. This puts the MCP work at phase 2 instead of the final phase.
+
+**Recommendation**: (by Saddler 5.5, claude-opus-5-5, 2026-11-19)
+
+**A — Keep the listener**, narrowly. *Rationale*: Your final architecture (ADR-0001 QST-AGENT-INTEROP) puts every agent on its owner's machine behind our MCP server, so MCP and an agent-side listener get built at some point regardless. Phase 1 is the cheapest moment to build them: one room shape (1:1), one agent, no turn-taking. The agent-side program is also the "own harness" ADR-0001 says this project is for. B is honestly simpler for phase 1 and has a real advantage (your agent stays online when your PC is off), but it moves the hardest, most-learning part to the final phase. There it arrives at the same time as multi-room, agent-decides-to-speak, and other people's agents. *Confidence*: 0.6 — your call: the trade is "simplicity and always-on now" against "build the core architecture while it's smallest," and how much you weigh learning vs. getting friends chatting fast is your preference, not a fact I can check. *If wrong*: if what you want from phase 1 is friends chatting with an always-on agent as soon as possible, this flips to **B**. If you want B's simplicity but don't want MCP pushed all the way to the end, it flips to **C**.
+
+**ANS:** (by [name])
+[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+
+---
+
 ## Decision
 
 ### Chosen — a phased plan (3XIA00's answers, 2026-11-19)

@@ -327,7 +327,7 @@ A lets stick with the original idea. If when developing, we find some serious pr
 ## Action Items — phase 1 build order
 
 - [x] **M0 — Toolchain**: asdf + Node LTS in WSL, `.tool-versions`, fix `.claude/agent.env` for WSL (ADR-0002). Owner: Saddler 5.5 + 3XIA00 (`~/.bashrc` line). *Done 2026-11-19: a fresh interactive shell resolves `node`/`npm` to `~/.asdf/shims`, Node v26.13.1.*
-- [ ] **M1 — Room server + web page, humans only**: Node + WebSockets + React/Vite; two browser tabs can chat in a 1:1 room; messages stored in Postgres (Neon dev branch, or local Postgres). Runs on `localhost`. Owner: 3XIA00 + Saddler 5.5
+- [ ] **M1 — Room server + web page, humans only**: Node + WebSockets + React/Vite; two browser tabs can chat in a 1:1 room; messages stored in Postgres (Neon dev branch, or local Postgres). Runs on `localhost`. Owner: 3XIA00 + Saddler 5.5. *2026-11-19: built per [ADR-0004](0004-m1-project-scaffold-and-humans-only-chat.md); 4 integration tests green against the Neon dev branch; server smoke-tested. Remaining: 3XIA00's hands-on check in two browser tabs (`npm run dev`).*
 - [ ] **M2 — MCP endpoint on the room server**: a room resource with subscription + notifications, and a `send_message` tool with an agent token; tested with the MCP Inspector. Owner: 3XIA00 + Saddler 5.5
 - [ ] **M3 — Agent harness on 3XIA00's PC**: connect → subscribe → on notification, read new messages → call Claude (plain completion, no tools) → `send_message`. Everything still on `localhost`. Owner: 3XIA00 + Saddler 5.5
 - [ ] **M4 — Deploy**: room server to Render with Neon; the harness on the PC points at the Render URL; share the link with friends. Owner: 3XIA00

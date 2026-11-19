@@ -62,11 +62,12 @@ messages     (id bigserial PK, room_id → rooms, participant_id → participant
 
 * **Tests hit the real database in `.env`.** That's honest coverage of the SQL, but `just gate` now needs network access to Neon (see QST-TEST-DB).
 * Running `tsx` in production (M4) is a toy-project shortcut; noted for M4.
+* `pg` 8.23 prints a security warning on every connect: `sslmode=require` in Neon's connection strings is currently treated as `verify-full` (the secure behavior), but `pg` v9 will weaken it to libpq semantics. Fix (3XIA00's hand, in `.env` and later on Render): change `sslmode=require` to `sslmode=verify-full` in the connection strings. That keeps today's behavior and silences the warning.
 
 ## Open question
 
 ### QST-TEST-DB: Which Neon database should development and tests use?
-- Status: answered — B: a Neon `dev` branch. Convention adopted with it: in `.env` on 3XIA00's PC, `DATABASE_URL` = the **dev** branch; the main branch's string goes only into Render's settings at M4 (see note below the block)
+- Status: answered — B: a Neon `dev` branch, configured as `DEV_BRANCH` in the local `.env` (3XIA00's naming; code adapted, see note below the block)
 - Why asking: M1's tests create rooms and messages in whatever database `DATABASE_URL` in `.env` points to. Today that's presumably your Neon project's main branch, which M4 will also deploy against, so test rows would mix with real friends' chats. Neon can make a **branch**: an instant, free copy of the database with its own connection string.
 - Need: pick a letter (or override — any shape answers)
 
@@ -85,6 +86,12 @@ B. see DEV_BRANCH= in .env
 ---
 
 NOT: how QST-TEST-DB's answer meets the code (Saddler 5.5, 2026-11-19). 3XIA00 put the dev branch's string in `.env` as `DEV_BRANCH`, next to the original `DATABASE_URL` (presumably the main branch). The code reads only `DATABASE_URL`, so as written, tests and `npm run dev` would still write to main. Rather than teach the code a second variable name, the convention is: **`DATABASE_URL` always means "the database *this* machine should use."** Locally that's the dev branch; on Render (M4) it's main. So the fix is a `.env` edit by 3XIA00: the dev string goes in as `DATABASE_URL`, and the main string moves out of the local `.env`, or is renamed to something unused such as `MAIN_DATABASE_URL`. Saddler can't make this edit or verify it: the harness's permission layer blocks reading `.env`, rightly, since it holds secrets. So no test touched any database until 3XIA00 confirmed it.
+
+NOT: **walk-back, same day.** 3XIA00 kept the names `DEV_BRANCH` (and added `OPENROUTER_KEY` for M3) rather than renaming, so the code adapted to the human's naming instead of the other way round. This turned out *safer* than the rename convention, because it doesn't depend on an edit nobody can verify:
+- `databaseUrl()` in `src/server/db.ts` uses `DEV_BRANCH` if set, else `DATABASE_URL`. `DEV_BRANCH` exists only in the local `.env`, so locally it's the dev branch; Render (M4) sets only `DATABASE_URL` = main.
+- The test suite **refuses to run** without `DEV_BRANCH`. It never falls back to `DATABASE_URL`, so tests can't write to main even if `.env` is misconfigured.
+- A value that isn't a `postgresql://` string fails with an error naming the variable, never printing its value.
+- First run, 2026-11-19: 4/4 tests green against the dev branch; full `just gate` green.
 
 ---
 

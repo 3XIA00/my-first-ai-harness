@@ -219,7 +219,7 @@ A. Since github page only runs static files.
 ---
 
 ### QST-MODEL-ACCESS: Which credential pays for the agent's model calls: the professor's OpenRouter key or 3XIA00's Claude subscription?
-- Status: unanswered
+- Status: answered — A: the professor's OpenRouter key; the subscription stays for Claude Code
 - Why asking: 3XIA00 asked in chat (2026-11-19): *"my professor sent me a $10 openrouter api key. Do we have to use the api for the harness? or I can use my claude subscription?"* Milestone M3's harness calls a model every time a friend writes, so it needs a credential. What Anthropic's published rules say (Claude Code docs, "Legal and compliance" → "Authentication and credential use", fetched 2026-11-19): subscription sign-in (OAuth) *"is intended exclusively for purchasers of Claude Free, Pro, Max, Ultra, Team, and Enterprise subscription plans and is designed to support ordinary use of Claude Code and other native Anthropic applications."* Developers building products, including with the Agent SDK, *"should use API key authentication"*, and Anthropic does not permit developers *"to route requests through Free, Pro, Max, or Ultra plan credentials on behalf of their users."* Our harness answers *friends'* messages, which is exactly that.
 - Need: pick a letter (or override — any shape answers)
 
@@ -232,13 +232,13 @@ Options:
 
 **A — The OpenRouter key.** *Rationale*: It's the right *kind* of credential (an API key, which the quoted rules require for a custom harness), it was given to you for coursework like this, and $10 goes a long way for phase-1 chat (estimate below). B is ruled out by Anthropic's own rules for the reason quoted in the Why line, not by cost. One design consequence: OpenRouter speaks the OpenAI-style format, so the harness should put the model call behind **one function** (e.g. `generateReply(history) → text`). Then switching to C later, or to another model, means changing one file. Keep the subscription for what it's for: Claude Code, where we build the harness together. *Confidence*: 0.85 — because the rule text is explicit and A is the only free option it allows; the remaining doubt is OpenRouter's exact Claude prices and request format, which I haven't verified beyond its quickstart page. *If wrong*: if OpenRouter's Claude pricing or API turns out awkward at M3, this flips to **C**. Nothing flips it to B.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+A
 
 ---
 
 ### QST-AGENT-MODEL: Which model is 3XIA00's agent?
-- Status: unanswered
+- Status: answered — C at low effort: Claude Haiku 5.5 (Saddler's lean was A; cost/quality trade is 3XIA00's call)
 - Why asking: The model sets the agent's personality quality and how far $10 goes. Rough cost per reply, assuming ~2,000 tokens of chat history in and ~300 tokens out, at **Anthropic's list prices** (Claude API skill table, cached 2026-11-03; OpenRouter's prices may differ, and longer chats cost more per reply):
   - Claude Opus 5.5 ($4 / $20 per million tokens in/out): ≈ $0.014/reply → **≈ 700 replies** per $10. Its thinking can't be turned off, so use `low` effort for chat; thinking tokens bill as output.
   - Claude Sonnet 5.5 ($2 / $10): ≈ $0.007/reply → **≈ 1,400 replies**.
@@ -254,8 +254,8 @@ Options:
 
 **A — Claude Opus 5.5**, at `low` effort. *Rationale*: It's the current default model for new Claude work, and the agent's personality is the product friends experience. Several hundred replies is plenty for phase-1 testing with a few friends. Trading quality for cost is your call to make, not mine: B and C are both reasonable if you'd rather stretch the credit. With the one-function design from QST-MODEL-ACCESS, switching is a one-line change. *Confidence*: 0.6 — because how far the credit needs to stretch depends on how chatty your friends are, which neither of us knows yet. *If wrong*: if phase-1 testing burns through credit faster than expected (watch OpenRouter's usage page), this flips to **B**, or to **C** if the persona still feels right on it.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+C at low
 
 ---
 
@@ -273,6 +273,8 @@ Options:
 - **Access/cost** (QST-ACCESS-COST): **override — no limits in phase 1**; testers are trusted friends. Later the owner can make their agent "stop listening" to a room to stop costs or abuse. If the platform is ever published, revisit this.
 - **Hosting** (QST-HOSTING): **B — Render** (server) **+ Neon** (Postgres database), chosen by 3XIA00. This also decides that chat history is stored in Postgres.
 - **Web stack** (QST-WEB-STACK): **A — plain Node server (WebSockets) + React client via Vite**, *"since it is the most widely documented way."*
+- **Model access** (QST-MODEL-ACCESS): **A — the professor's $10 OpenRouter key**, kept in a gitignored `.env` on 3XIA00's PC (the agent runs there, so the key never goes to Render). The model call sits behind one function (`generateReply(history)`), since OpenRouter speaks the OpenAI-style format.
+- **Agent model** (QST-AGENT-MODEL): **Claude Haiku 5.5 at `low` effort**, roughly 28,000 short replies per $10 at list prices. *To verify at M3:* OpenRouter's model id for Haiku 5.5 and how it passes the effort setting (OpenRouter's own request format, not Anthropic's `output_config.effort`).
 - **Agent connection** (QST-AGENT-CONNECTION): **B, in 3XIA00's design**: *"when agent uses mcp to connect to server, he will setup a listener. When there is a new message on server, the server will send a 'notification' to agent through mcp. The listener receives the 'notification' and wakes the agent."*
 
 **3XIA00 asked "is this too aggressive for phase 1, and what about a server on my PC with a public port instead?" — Saddler 5.5's answer (2026-11-19):**
@@ -342,6 +344,12 @@ Options:
 - Contributors: 3XIA00 (question), Saddler 5.5 (Anthropic credential rules fetched from the Claude Code docs; OpenRouter quickstart fetched; pricing from the Claude API skill's model table)
 - Changes: new QST-MODEL-ACCESS (credential) and QST-AGENT-MODEL (model, can wait until M3)
 - Outcome: stays Accepted
+
+### Iteration 6 (2026-11-19)
+- Trigger: 3XIA00 answered QST-MODEL-ACCESS (A) and QST-AGENT-MODEL ("C at low")
+- Contributors: 3XIA00 (answers), Saddler 5.5 (annotations, Decision)
+- Changes: Decision gains model-access and agent-model entries. My lean on QST-AGENT-MODEL (A, Opus 5.5) was not taken; Haiku 5.5 at low effort chosen. The OpenRouter model id and effort mapping are flagged to verify at M3. Also confirmed this session: after Linux Node + the `~/.bashrc` PATH line + a Claude Code restart, the `adrs4ai` MCP server connects (it had timed out under Windows `npx`). That supports ADR-0002's hypothesis.
+- Outcome: stays Accepted; no open questions
 
 ---
 

@@ -218,6 +218,47 @@ A. Since github page only runs static files.
 
 ---
 
+### QST-MODEL-ACCESS: Which credential pays for the agent's model calls: the professor's OpenRouter key or 3XIA00's Claude subscription?
+- Status: unanswered
+- Why asking: 3XIA00 asked in chat (2026-11-19): *"my professor sent me a $10 openrouter api key. Do we have to use the api for the harness? or I can use my claude subscription?"* Milestone M3's harness calls a model every time a friend writes, so it needs a credential. What Anthropic's published rules say (Claude Code docs, "Legal and compliance" → "Authentication and credential use", fetched 2026-11-19): subscription sign-in (OAuth) *"is intended exclusively for purchasers of Claude Free, Pro, Max, Ultra, Team, and Enterprise subscription plans and is designed to support ordinary use of Claude Code and other native Anthropic applications."* Developers building products, including with the Agent SDK, *"should use API key authentication"*, and Anthropic does not permit developers *"to route requests through Free, Pro, Max, or Ultra plan credentials on behalf of their users."* Our harness answers *friends'* messages, which is exactly that.
+- Need: pick a letter (or override — any shape answers)
+
+Options:
+- **A — The OpenRouter key**: a pay-per-use API key, which is what a custom harness is meant to use. One key reaches Claude and many other providers' models. Its native API is OpenAI-style (OpenAI SDK or OpenRouter's own SDK at `https://openrouter.ai/api/v1`), *not* Anthropic's SDK format. Prices: see openrouter.ai/models.
+- **B — The Claude subscription**: sign in with the Pro/Max account. Free at the margin, but against Anthropic's rules for this use (above). An account flagged for it can be restricted without notice, and that's the same account you use for Claude Code and this project.
+- **C — Your own Anthropic API key**: a key from the Claude Console with its own billing. The same rules allow it as A does; it uses the official Anthropic SDK directly; it costs your money instead of the professor's credit.
+
+**Recommendation**: (by Saddler 5.5, claude-opus-5-5, 2026-11-19)
+
+**A — The OpenRouter key.** *Rationale*: It's the right *kind* of credential (an API key, which the quoted rules require for a custom harness), it was given to you for coursework like this, and $10 goes a long way for phase-1 chat (estimate below). B is ruled out by Anthropic's own rules for the reason quoted in the Why line, not by cost. One design consequence: OpenRouter speaks the OpenAI-style format, so the harness should put the model call behind **one function** (e.g. `generateReply(history) → text`). Then switching to C later, or to another model, means changing one file. Keep the subscription for what it's for: Claude Code, where we build the harness together. *Confidence*: 0.85 — because the rule text is explicit and A is the only free option it allows; the remaining doubt is OpenRouter's exact Claude prices and request format, which I haven't verified beyond its quickstart page. *If wrong*: if OpenRouter's Claude pricing or API turns out awkward at M3, this flips to **C**. Nothing flips it to B.
+
+**ANS:** (by [name])
+[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+
+---
+
+### QST-AGENT-MODEL: Which model is 3XIA00's agent?
+- Status: unanswered
+- Why asking: The model sets the agent's personality quality and how far $10 goes. Rough cost per reply, assuming ~2,000 tokens of chat history in and ~300 tokens out, at **Anthropic's list prices** (Claude API skill table, cached 2026-11-03; OpenRouter's prices may differ, and longer chats cost more per reply):
+  - Claude Opus 5.5 ($4 / $20 per million tokens in/out): ≈ $0.014/reply → **≈ 700 replies** per $10. Its thinking can't be turned off, so use `low` effort for chat; thinking tokens bill as output.
+  - Claude Sonnet 5.5 ($2 / $10): ≈ $0.007/reply → **≈ 1,400 replies**.
+  - Claude Haiku 5.5 ($0.10 / $0.50): ≈ $0.00035/reply → **≈ 28,000 replies**.
+- Need: pick a letter (or override — any shape answers); this can wait until M3
+
+Options:
+- **A — Claude Opus 5.5**: the strongest current Opus; best persona and judgment; ~700 replies per $10.
+- **B — Claude Sonnet 5.5**: strong everyday model; ~1,400 replies per $10.
+- **C — Claude Haiku 5.5**: fastest and cheapest; ~28,000 replies per $10; less nuanced.
+
+**Recommendation**: (by Saddler 5.5, claude-opus-5-5, 2026-11-19)
+
+**A — Claude Opus 5.5**, at `low` effort. *Rationale*: It's the current default model for new Claude work, and the agent's personality is the product friends experience. Several hundred replies is plenty for phase-1 testing with a few friends. Trading quality for cost is your call to make, not mine: B and C are both reasonable if you'd rather stretch the credit. With the one-function design from QST-MODEL-ACCESS, switching is a one-line change. *Confidence*: 0.6 — because how far the credit needs to stretch depends on how chatty your friends are, which neither of us knows yet. *If wrong*: if phase-1 testing burns through credit faster than expected (watch OpenRouter's usage page), this flips to **B**, or to **C** if the persona still feels right on it.
+
+**ANS:** (by [name])
+[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+
+---
+
 ## Decision
 
 ### Chosen — a phased plan (3XIA00's answers, 2026-11-19)
@@ -295,6 +336,12 @@ A. Since github page only runs static files.
 - Contributors: 3XIA00 (question), Saddler 5.5 (QST-HOSTING-PAGES with recommendation)
 - Changes: new QST-HOSTING-PAGES, which would reopen QST-HOSTING if answered B or C
 - Outcome: stays Accepted. 3XIA00 answered A ("github page only runs static files"); Render + Neon stands. M0 marked done.
+
+### Iteration 5 (2026-11-19)
+- Trigger: 3XIA00 asked in chat whether the harness must use the professor's $10 OpenRouter key or can use their Claude subscription
+- Contributors: 3XIA00 (question), Saddler 5.5 (Anthropic credential rules fetched from the Claude Code docs; OpenRouter quickstart fetched; pricing from the Claude API skill's model table)
+- Changes: new QST-MODEL-ACCESS (credential) and QST-AGENT-MODEL (model, can wait until M3)
+- Outcome: stays Accepted
 
 ---
 

@@ -120,6 +120,7 @@ Pending: QST-ROOM-SHARING, QST-NOTIFY-SHAPE. The proposed design above stands un
 
 - [ ] Concern: the agent's own replies come back to it as notifications. The agent-side harness (M3) must skip messages whose `participantId` is its own, and M3's tests must cover it. This is the reply-loop problem with a single agent.
 - [ ] Future task (multi-room phases): lift the one-room rule; one subscription per room; the notification URI already names the room.
+- [ ] Future design option (3XIA00, chat, 2026-11-19): *"a agent can setup different listeners for different rooms."* The proposed server design supports this unchanged. Each listener can be its own MCP session subscribed to one `room://<id>`, or one session can hold several subscriptions and route by URI. The bigger win is on the agent side: **one listener per room = one conversation context per room**, so the model never sees room A's messages while answering room B. That matches ADR-0003's final shape ("an agent listens to only 1–2 rooms so that agent won't get confused"). It's the M3 harness's choice when multi-room arrives; nothing in M2 blocks it.
 - [ ] Future task (other people's agents): replace the single `AGENT_TOKEN` with per-agent tokens.
 
 ---

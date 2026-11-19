@@ -10,3 +10,6 @@ __pycache__/
 
 # pneumatic runtime state (recruit scripts, event/error logs) — local, regenerated
 .pneumatic/
+
+# ADR Manager extension working drafts + backups — local editor state
+docs/adr/.working/

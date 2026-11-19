@@ -66,7 +66,7 @@ messages     (id bigserial PK, room_id → rooms, participant_id → participant
 ## Open question
 
 ### QST-TEST-DB: Which Neon database should development and tests use?
-- Status: unanswered
+- Status: answered — B: a Neon `dev` branch. Convention adopted with it: in `.env` on 3XIA00's PC, `DATABASE_URL` = the **dev** branch; the main branch's string goes only into Render's settings at M4 (see note below the block)
 - Why asking: M1's tests create rooms and messages in whatever database `DATABASE_URL` in `.env` points to. Today that's presumably your Neon project's main branch, which M4 will also deploy against, so test rows would mix with real friends' chats. Neon can make a **branch**: an instant, free copy of the database with its own connection string.
 - Need: pick a letter (or override — any shape answers)
 
@@ -79,8 +79,12 @@ Options:
 
 **B — A `dev` branch.** *Rationale*: It costs one click and one edited `.env` line, and it's exactly what Neon branches are for. A is fine *until M4*, when friends' messages start living in the same database the test suite writes to. C buys offline gates at the price of a second database setup, which a toy project doesn't need. *Confidence*: 0.8 — because branching is Neon's documented workflow for this, and nothing in M1 depends on which branch is used. *If wrong*: if the gate needing network turns out painful (e.g. you often work offline), this flips to **C**.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+B. see DEV_BRANCH= in .env
+
+---
+
+NOT: how QST-TEST-DB's answer meets the code (Saddler 5.5, 2026-11-19). 3XIA00 put the dev branch's string in `.env` as `DEV_BRANCH`, next to the original `DATABASE_URL` (presumably the main branch). The code reads only `DATABASE_URL`, so as written, tests and `npm run dev` would still write to main. Rather than teach the code a second variable name, the convention is: **`DATABASE_URL` always means "the database *this* machine should use."** Locally that's the dev branch; on Render (M4) it's main. So the fix is a `.env` edit by 3XIA00: the dev string goes in as `DATABASE_URL`, and the main string moves out of the local `.env`, or is renamed to something unused such as `MAIN_DATABASE_URL`. Saddler can't make this edit or verify it: the harness's permission layer blocks reading `.env`, rightly, since it holds secrets. So no test touched any database until 3XIA00 confirmed it.
 
 ---
 

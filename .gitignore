@@ -18,3 +18,7 @@ docs/adr/.working/
 .env
 .env.*
 !.env.example
+
+# Node / build output
+node_modules/
+dist/

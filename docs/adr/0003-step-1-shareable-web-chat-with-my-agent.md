@@ -200,7 +200,7 @@ A. There is no meaning to set @mention rule in 1:1
 ---
 
 ### QST-HOSTING-PAGES: Should phase 1 use GitHub Pages + Neon instead of Render + Neon?
-- Status: unanswered
+- Status: answered — A: Render + Neon stands; QST-HOSTING unchanged
 - Why asking: 3XIA00 asked in chat (2026-11-19): *"maybe we can do github page + neon which might be easier for phase 1?"* That reopens QST-HOSTING's answer (B, Render + Neon). The key fact: **GitHub Pages only serves static files** (HTML, JavaScript, CSS). It cannot run a program, so it cannot hold WebSocket connections, run the MCP endpoint our agent connects to (QST-AGENT-CONNECTION), or keep a secret such as the agent token. Without a server, the browser would have to talk to the database directly.
 - Need: pick a letter (or override — any shape answers)
 
@@ -213,8 +213,8 @@ Options:
 
 **A — Keep Render + Neon.** *Rationale*: The thing GitHub Pages removes, a running server, is the thing every phase-1 decision depends on: the MCP endpoint (QST-AGENT-CONNECTION B), live messages over WebSockets (QST-WEB-STACK A), and a private place for the agent token (Open Follow-ups). B is a coherent design, and `LISTEN/NOTIFY` is a neat wake signal, but it swaps the MCP architecture you chose in ADR-0001 for database security rules, which are harder to get right than a server. As for "easier": Render's deploy is about as simple as Pages (connect repo, pick a start command), and it doesn't happen until M4. *Confidence*: 0.8 — because the static-only limit of Pages is certain and it collides with three accepted decisions; the remaining doubt is whether Render's free tier (sleeping after idle, Open Follow-ups) turns out annoying enough to change the trade. *If wrong*: if you'd rather drop MCP for phase 1 and keep everything free and serverless, this flips to **B**. In that case QST-AGENT-CONNECTION reopens too.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+A. Since github page only runs static files.
 
 ---
 
@@ -262,7 +262,7 @@ Options:
 
 ## Action Items — phase 1 build order
 
-- [ ] **M0 — Toolchain**: asdf + Node LTS in WSL, `.tool-versions`, fix `.claude/agent.env` for WSL (ADR-0002). Owner: Saddler 5.5. *2026-11-19: all done except the `~/.bashrc` PATH line, which is 3XIA00's hand (see ADR-0002 Open Follow-ups).*
+- [x] **M0 — Toolchain**: asdf + Node LTS in WSL, `.tool-versions`, fix `.claude/agent.env` for WSL (ADR-0002). Owner: Saddler 5.5 + 3XIA00 (`~/.bashrc` line). *Done 2026-11-19: a fresh interactive shell resolves `node`/`npm` to `~/.asdf/shims`, Node v26.13.1.*
 - [ ] **M1 — Room server + web page, humans only**: Node + WebSockets + React/Vite; two browser tabs can chat in a 1:1 room; messages stored in Postgres (Neon dev branch, or local Postgres). Runs on `localhost`. Owner: 3XIA00 + Saddler 5.5
 - [ ] **M2 — MCP endpoint on the room server**: a room resource with subscription + notifications, and a `send_message` tool with an agent token; tested with the MCP Inspector. Owner: 3XIA00 + Saddler 5.5
 - [ ] **M3 — Agent harness on 3XIA00's PC**: connect → subscribe → on notification, read new messages → call Claude (plain completion, no tools) → `send_message`. Everything still on `localhost`. Owner: 3XIA00 + Saddler 5.5
@@ -294,7 +294,7 @@ Options:
 - Trigger: 3XIA00 asked in chat whether GitHub Pages + Neon would be easier for phase 1
 - Contributors: 3XIA00 (question), Saddler 5.5 (QST-HOSTING-PAGES with recommendation)
 - Changes: new QST-HOSTING-PAGES, which would reopen QST-HOSTING if answered B or C
-- Outcome: stays Accepted (QST-HOSTING's answer stands unless QST-HOSTING-PAGES changes it)
+- Outcome: stays Accepted. 3XIA00 answered A ("github page only runs static files"); Render + Neon stands. M0 marked done.
 
 ---
 

@@ -126,7 +126,12 @@ function Chat({ roomId, displayName }: { roomId: string; displayName: string }) 
     };
   }, [roomId, displayName]);
 
-  useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
+  // Braces matter: an effect's return value is its cleanup. Without them this returned
+  // scrollIntoView's result, which in current Chrome is a Promise, and React crashed calling
+  // it on unmount ("destroy is not a function"): the M1 blank page.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   function submit(e: FormEvent) {
     e.preventDefault();

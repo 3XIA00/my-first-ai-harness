@@ -21,12 +21,16 @@ let port: number;
 const createdRooms: string[] = [];
 
 beforeAll(async () => {
-  // Two jsdom gaps, filled with real implementations rather than mocks:
-  // - jsdom doesn't implement scrolling; every real browser does. A no-op fills the gap.
+  // Two jsdom gaps, filled to behave like a real browser:
+  // - jsdom doesn't implement scrolling. The stand-in returns a Promise *because current Chrome
+  //   does*. An earlier no-op returning undefined encoded the very assumption that caused the
+  //   M1 blank page, and so hid it (see Regression tests below).
   // - jsdom's own WebSocket breaks under Vitest ("The "event" argument must be an instance of
   //   Event"), so the page uses the `ws` client, which speaks the same browser-style API
   //   (onopen / onmessage with event.data / send / close) over a real socket.
-  Element.prototype.scrollIntoView ??= () => {};
+  Element.prototype.scrollIntoView = function scrollIntoView() {
+    return Promise.resolve();
+  } as unknown as Element["scrollIntoView"];
   globalThis.WebSocket = NodeWebSocket as unknown as typeof WebSocket;
   loadEnv();
   if (!process.env.DEV_BRANCH) {
@@ -80,6 +84,26 @@ describe("chat page", () => {
 });
 
 describe("Regression tests", () => {
+  it("survives leaving the chat when the browser's scrollIntoView returns a Promise (M1 blank page)", async () => {
+    // Bug: 3XIA00 joined a room and the page turned white: "TypeError: destroy is not a
+    // function". The scroll effect was written `useEffect(() => ref.current?.scrollIntoView(...))`,
+    // so it *returned* scrollIntoView's result. Current Chrome returns a Promise there; React
+    // took it as the effect's cleanup and crashed calling it when StrictMode unmounted the
+    // chat. Fixed by giving the effect a block body (it returns nothing).
+    await openRoomPage();
+    const view = render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    );
+    fireEvent.change(screen.getByPlaceholderText("Your name"), { target: { value: "Scroller" } });
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Join" })));
+    await screen.findByPlaceholderText("Write a message", {}, { timeout: 10_000 });
+
+    // Leaving the page runs every effect's cleanup. With the bug, this threw.
+    expect(() => view.unmount()).not.toThrow();
+  });
+
   it("joins exactly once and never shows 'Disconnected' when StrictMode remounts the chat (M1 two-tab check)", async () => {
     // Bug (found 2026-11-19 while chasing 3XIA00's "page turned white after Join"):
     // StrictMode mounts the chat, unmounts it, and mounts it again. The first mount's

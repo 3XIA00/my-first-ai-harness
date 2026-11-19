@@ -145,7 +145,9 @@ A. Your explaination makes sense.
 ## Open Follow-ups
 
 - [ ] Unverified assumption: the `adrs4ai` MCP timeout is caused by Windows `npx` via WSL interop. **Narrowed same day**: `npx -y @adrs4ai/docket list-open docs/adr` *did* run through Windows npx from WSL — so interop isn't outright broken; the likelier mechanism is a slow first-run fetch exceeding the harness's 30 s MCP connect timeout. Retest after Linux Node is installed.
-- [ ] `.claude/agent.env` prints "✅ ASDF environment initialized" even when asdf is absent, and only searches macOS Homebrew paths. It reports success without checking for it; fix it for WSL whatever QST-NODE-INSTALL decides.
+- [x] `.claude/agent.env` prints "✅ ASDF environment initialized" even when asdf is absent, and only searches macOS Homebrew paths. It reports success without checking for it; fix it for WSL whatever QST-NODE-INSTALL decides. **Done 2026-11-19**: it now puts the asdf shims on PATH (all that asdf ≥ 0.16 needs), sources the legacy `asdf.sh` only if it exists, and reports what it actually found. Verified in a clean `env -i` shell with Windows Node first on PATH: it resolved Linux Node 26.13.1. Side effect: kintsugi will now flag this stencil file as locally modified, which is intended.
+- [x] **Installed 2026-11-19 (Saddler 5.5)**: asdf v0.20.2 (release binary, md5-verified, at `~/.local/bin/asdf`), the `nodejs` plugin, Node **26.13.1** (current LTS "Lithium", npm 11.20.0), pinned in the committed `.tool-versions`.
+- [ ] **3XIA00's hand**: add asdf's shims to `~/.bashrc` (`export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"`). The agent's attempt to edit the shell profile was refused by the harness's permission layer, correctly: persistent shell configuration is the human's to change. Until this line is added, new terminals still find Windows `npm` first.
 
 ---
 

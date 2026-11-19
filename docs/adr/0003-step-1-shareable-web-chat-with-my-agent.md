@@ -260,7 +260,7 @@ C at low
 ---
 
 ### QST-AGENT-HOSTED: With an API key in hand, should phase 1 drop the listener and run the agent inside the room server?
-- Status: unanswered
+- Status: answered — A: keep the listener (QST-AGENT-CONNECTION B stands); B is the named fallback if development hits a serious problem
 - Why asking: 3XIA00 asked in chat (2026-11-19): *"Since we are using a openrouter api key, does it mean that we dont need the agent to run a listener any more? we can simply setup a room and when there is a message, send a message to model through api?"* There are two separate links here. **Agent → model** (how the agent thinks) uses the OpenRouter key either way. **Room → agent** (how the agent learns a message arrived) is what the listener is for, and whether we need one depends on **where the agent runs**, not on the key. If the agent lives *inside* the room server, the server already sees every message and calls OpenRouter itself: no listener, no MCP in phase 1. That is QST-AGENT-CONNECTION's option A, which 3XIA00 answered B. This question re-asks it with the key now decided. M1 (humans-only chat) is identical either way, so this doesn't block starting.
 - Need: pick a letter (or override — any shape answers)
 
@@ -273,8 +273,8 @@ Options:
 
 **A — Keep the listener**, narrowly. *Rationale*: Your final architecture (ADR-0001 QST-AGENT-INTEROP) puts every agent on its owner's machine behind our MCP server, so MCP and an agent-side listener get built at some point regardless. Phase 1 is the cheapest moment to build them: one room shape (1:1), one agent, no turn-taking. The agent-side program is also the "own harness" ADR-0001 says this project is for. B is honestly simpler for phase 1 and has a real advantage (your agent stays online when your PC is off), but it moves the hardest, most-learning part to the final phase. There it arrives at the same time as multi-room, agent-decides-to-speak, and other people's agents. *Confidence*: 0.6 — your call: the trade is "simplicity and always-on now" against "build the core architecture while it's smallest," and how much you weigh learning vs. getting friends chatting fast is your preference, not a fact I can check. *If wrong*: if what you want from phase 1 is friends chatting with an always-on agent as soon as possible, this flips to **B**. If you want B's simplicity but don't want MCP pushed all the way to the end, it flips to **C**.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+A lets stick with the original idea. If when developing, we find some serious problem, we might switch to B.
 
 ---
 
@@ -293,6 +293,8 @@ Options:
 - **Hosting** (QST-HOSTING): **B — Render** (server) **+ Neon** (Postgres database), chosen by 3XIA00. This also decides that chat history is stored in Postgres.
 - **Web stack** (QST-WEB-STACK): **A — plain Node server (WebSockets) + React client via Vite**, *"since it is the most widely documented way."*
 - **Model access** (QST-MODEL-ACCESS): **A — the professor's $10 OpenRouter key**, kept in a gitignored `.env` on 3XIA00's PC (the agent runs there, so the key never goes to Render). The model call sits behind one function (`generateReply(history)`), since OpenRouter speaks the OpenAI-style format.
+- **Agent location** (QST-AGENT-HOSTED): **stays on 3XIA00's PC, behind the MCP listener.** The OpenRouter key doesn't change that, because the key is the agent → model link and the listener is the room → agent link. **Fallback**, in 3XIA00's words: *"If when developing, we find some serious problem, we might switch to B"* (hosted agent inside the room server). Keeping the model call behind one function (`generateReply`) keeps that switch cheap.
+- **Neon Auth: off.** It's a sign-in system for app users, and phase 1 has no accounts (QST-ACCESS-COST). The server reaches Neon through the `DATABASE_URL` connection string in `.env`, which carries its own database password. (Asked in chat 2026-11-19.)
 - **Agent model** (QST-AGENT-MODEL): **Claude Haiku 5.5 at `low` effort**, roughly 28,000 short replies per $10 at list prices. *To verify at M3:* OpenRouter's model id for Haiku 5.5 and how it passes the effort setting (OpenRouter's own request format, not Anthropic's `output_config.effort`).
 - **Agent connection** (QST-AGENT-CONNECTION): **B, in 3XIA00's design**: *"when agent uses mcp to connect to server, he will setup a listener. When there is a new message on server, the server will send a 'notification' to agent through mcp. The listener receives the 'notification' and wakes the agent."*
 
@@ -368,6 +370,12 @@ Options:
 - Trigger: 3XIA00 answered QST-MODEL-ACCESS (A) and QST-AGENT-MODEL ("C at low")
 - Contributors: 3XIA00 (answers), Saddler 5.5 (annotations, Decision)
 - Changes: Decision gains model-access and agent-model entries. My lean on QST-AGENT-MODEL (A, Opus 5.5) was not taken; Haiku 5.5 at low effort chosen. The OpenRouter model id and effort mapping are flagged to verify at M3. Also confirmed this session: after Linux Node + the `~/.bashrc` PATH line + a Claude Code restart, the `adrs4ai` MCP server connects (it had timed out under Windows `npx`). That supports ADR-0002's hypothesis.
+- Outcome: stays Accepted; no open questions
+
+### Iteration 7 (2026-11-19)
+- Trigger: 3XIA00 asked whether the OpenRouter key removes the need for a listener (new QST-AGENT-HOSTED), answered A, and asked whether to enable Neon Auth
+- Contributors: 3XIA00 (question, answer), Saddler 5.5 (two-link explanation, QST-AGENT-HOSTED, Decision entries)
+- Changes: Decision gains "agent location" (listener stays; hosted agent named as fallback) and "Neon Auth: off"
 - Outcome: stays Accepted; no open questions
 
 ---

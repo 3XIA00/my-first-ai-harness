@@ -9,11 +9,11 @@ adr teaching map: the example is not the teaching — these are the up-links fro
 # Step 1 — A Shareable Web Chat with My Agent
 
 - **Date**: 2026-11-12
-- **Iteration**: 2
+- **Iteration**: 3
 - **Status**: Accepted
 - **Deciders**: 3XIA00; Saddler 5.5 (claude-opus-5-5)
 
-**TL;DR**: Phased plan: phase 1 = private 1:1 chats with 3XIA00's tool-less agent; phase 2 = one shared room with @mention replies; final = many linked rooms where agents choose when to speak. The stack is a Node + WebSocket server with a React/Vite page, on Render + Neon, with no usage limits while testing with trusted friends. One question is still open: how the agent connects (QST-AGENT-CONNECTION).
+**TL;DR**: Phase 1 = private 1:1 web chats with 3XIA00's tool-less agent. The room server (Node + WebSockets + React/Vite, Render + Neon) exposes an MCP endpoint. 3XIA00's agent runs on 3XIA00's PC as an MCP client that the server *notifies* about new messages. Built in four milestones, all local until the last.
 
 ---
 
@@ -163,7 +163,7 @@ A. Since it is the most widely documented way
 ---
 
 ### QST-AGENT-CONNECTION: How does 3XIA00's agent connect to the room and learn there's a new message?
-- Status: unanswered
+- Status: answered — B, with 3XIA00's own wake design (server pushes an MCP notification); the "is this too aggressive / PC + open port?" sub-question is answered in Decision
 - Why asking: Two of your answers point in different directions, and you flagged the gap yourself. QST-AGENT-ENGINE ("C") reads as *the room server calls the model* when a friend writes. But ADR-0001 QST-AGENT-INTEROP says agents **run on their owners' machines** and join **through an MCP server we provide**, and you described agents as "listening" to rooms and being told to "stop listening." Under QST-AGENT-ENGINE you also asked: *"how we wake the agent and let agent reply: either a webhook or a listener (we need to discuss this)."* This question settles both together for phase 1. Background: MCP is request/response (the agent calls tools; the server answers), so with MCP, "listening" means the agent calls a tool that **waits** until a message arrives (a long-poll). A **webhook** is the reverse: the server calls *the agent's* URL when a message arrives, so the agent's machine must be reachable from the internet.
 - Need: pick a letter (or override — any shape answers)
 
@@ -176,13 +176,13 @@ Options:
 
 **B — MCP listener from day one.** *Rationale*: Your own answers describe B. Agents live on owners' machines (ADR-0001 QST-AGENT-INTEROP), the platform "provides an mcp and a link," and agents "listen" to rooms and can "stop listening" (QST-ROOM-SHAPE, QST-ACCESS-COST). A listener also beats a webhook on the problem that matters for agents on home machines: an outbound connection (listener) works from behind any home router, while an inbound one (webhook) needs a tunnel on every owner's machine. B costs maybe a couple hundred more lines than A in phase 1, and those lines are the agent-side loop, which is the harness itself. A gets friends chatting sooner but builds the agent in the one place ADR-0001 says it won't live. QST-AGENT-ENGINE's answer (C: a plain model call, no tools) still holds inside B, since it describes what happens inside each turn of the loop. *Confidence*: 0.65 — because B matches every architectural answer you gave, but it puts MCP-over-HTTP and auth for the MCP endpoint on the phase-1 critical path, and I haven't measured how much friction that adds. *If wrong*: if getting friends chatting this week matters more than building the final shape first, or you want your agent to answer while your PC is off, this flips to **A** (accepting a later rewrite of the agent part).
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+B. My idea is that there is a sever running on render, when agent uses mcp to connect to server, he will setup a listener. When there is a new message on server, the server will send a "notification" to agent through mcp. The listener receives the "notification" and wakes the agent. If this is too aggressive(too many workloads) ofr phase 1, we can alternatively do: phase 1: a server running on my PC, opens a port to public so htat my firends(on other devices) can access and chat with my agent. What do you think?
 
 ---
 
 ### QST-PHASE1-MENTION: In phase 1's private 1:1 chats, must friends @mention the agent?
-- Status: unanswered
+- Status: answered — A: no @mention in 1:1; the rule starts with phase 2's shared room
 - Why asking: Your QST-SPEAK-POLICY answer says phase 1 uses A (reply only when @mentioned). But phase 1 is also private 1:1 chats (QST-ROOM-SHAPE), where every message is already addressed to the agent. Requiring `@agent` on every message there would just be friction. I'm checking whether you meant the @mention rule to start in phase 2's shared room.
 - Need: yes/no (or override)
 
@@ -194,8 +194,8 @@ Options:
 
 **A — No; the @mention rule starts in phase 2.** *Rationale*: In a 1:1 chat, @mention-only and reply-to-everything behave identically if friends always mention, and differently only when someone forgets. Then the agent goes silent for no reason the friend can see. The rule exists to keep an agent from interrupting a *group*, and phase 1 has no group. *Confidence*: 0.85 — because I think this is what your answer meant, and I'm confirming rather than disagreeing. *If wrong*: if you want phase 1 to rehearse the exact phase-2 rule, so the agent-side code never changes between phases, this flips to **B**.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+A. There is no meaning to set @mention rule in 1:1
 
 ---
 
@@ -206,13 +206,19 @@ Options:
 | | Phase 1 (now) | Phase 2 | Final |
 |---|---|---|---|
 | **Room shape** (QST-ROOM-SHAPE) | **A** — private 1:1 chat per friend | **B** — one shared room | **C** — many rooms, one link each; everyone in a room sees every message; an agent listens to only 1–2 rooms "so that agent won't get confused" |
-| **Speak policy** (QST-SPEAK-POLICY) | **A** — @mention only (see QST-PHASE1-MENTION for 1:1) | A | **C** — the agent decides |
+| **Speak policy** (QST-SPEAK-POLICY, QST-PHASE1-MENTION) | replies to every message (1:1 — no @mention needed) | **A** — @mention only | **C** — the agent decides (a skill; see ADR-0001 QST-REPLY-LOOPS) |
+| **Agent connection** (QST-AGENT-CONNECTION) | **B** — MCP; agent on 3XIA00's PC; server notifies the agent | B | B (+ a `wait_for_messages` fallback for off-the-shelf clients) |
 | **Agent engine** (QST-AGENT-ENGINE) | **C** — a plain model call per reply, no tools | C | tools (web, code…) considered *after* phase 2 |
 
 - **Access/cost** (QST-ACCESS-COST): **override — no limits in phase 1**; testers are trusted friends. Later the owner can make their agent "stop listening" to a room to stop costs or abuse. If the platform is ever published, revisit this.
 - **Hosting** (QST-HOSTING): **B — Render** (server) **+ Neon** (Postgres database), chosen by 3XIA00. This also decides that chat history is stored in Postgres.
 - **Web stack** (QST-WEB-STACK): **A — plain Node server (WebSockets) + React client via Vite**, *"since it is the most widely documented way."*
-- **Agent connection**: open, QST-AGENT-CONNECTION.
+- **Agent connection** (QST-AGENT-CONNECTION): **B, in 3XIA00's design**: *"when agent uses mcp to connect to server, he will setup a listener. When there is a new message on server, the server will send a 'notification' to agent through mcp. The listener receives the 'notification' and wakes the agent."*
+
+**3XIA00 asked "is this too aggressive for phase 1, and what about a server on my PC with a public port instead?" — Saddler 5.5's answer (2026-11-19):**
+- **The design is sound, and MCP supports it.** Over MCP's HTTP transport the server can push messages to a connected client. The standard shape for "something changed" is a *resource subscription*: the agent subscribes to `room://<id>`, the server sends `notifications/resources/updated` when a message lands, and the agent then reads the new messages. *Caveat (from training data; verify against the TypeScript MCP SDK when building):* off-the-shelf clients like Claude Code or Claude Desktop generally **don't wake the model** on such notifications; they're built around the model calling tools. That doesn't matter in phase 1, because **our agent harness is our own MCP client** and can react to notifications however we choose. For the final phase, when friends bring their own clients, a `wait_for_messages` tool (blocks until a message arrives) is the portable fallback.
+- **Not too aggressive if it's built in milestones**, each one runnable on its own (Action Items below). Everything runs on `localhost` until the last milestone, so the PC-server alternative doesn't save the MCP work; it would only skip the Render deploy, which is the smallest milestone.
+- **I'd advise against opening a port on your home router.** It exposes your home machine directly to the internet, home IPs change, and many ISPs (carrier-grade NAT) block inbound connections anyway. If we ever need a PC-hosted server reachable from outside, a tunnel (Cloudflare Tunnel / ngrok) does it without opening anything.
 
 **Rationale**: 3XIA00 kept the *final* shape of each question in view and picked the cheapest version of it for phase 1. That phasing is the main design decision here: every phase-1 choice is the first step of a final choice, not a dead end.
 
@@ -231,6 +237,17 @@ Options:
 - [ ] Unverified assumption: Anthropic API key. Confirm 3XIA00 has (or wants) one; it's separate from a Claude.ai subscription. Optional, and it doesn't change the no-limits decision: a monthly spend limit in the Anthropic console is a zero-code backstop against a bug (e.g. a reply loop), not just against strangers.
 - [ ] Unverified assumption (from training data, cutoff June 2026; check current terms): Render's free web services sleep after ~15 min idle and take tens of seconds to wake. The first friend after a quiet spell waits, and an open WebSocket may drop. Neon's free Postgres also scales to zero. Both are fine for a toy, but expect a slow first page load.
 - [ ] Future task: choose a Postgres client for Neon (`pg`, or a typed layer like Drizzle) when the first DB code is written.
+- [ ] Concern: the MCP endpoint on Render is public. Phase 1 has no usage limits by decision, but *posting as the agent* should still require a secret token known only to 3XIA00's harness. Otherwise anyone who finds the URL can speak as 3XIA00's agent. This is identity, not a usage limit. Settle it in milestone 2.
+
+---
+
+## Action Items — phase 1 build order
+
+- [ ] **M0 — Toolchain**: asdf + Node LTS in WSL, `.tool-versions`, fix `.claude/agent.env` for WSL (ADR-0002). Owner: Saddler 5.5
+- [ ] **M1 — Room server + web page, humans only**: Node + WebSockets + React/Vite; two browser tabs can chat in a 1:1 room; messages stored in Postgres (Neon dev branch, or local Postgres). Runs on `localhost`. Owner: 3XIA00 + Saddler 5.5
+- [ ] **M2 — MCP endpoint on the room server**: a room resource with subscription + notifications, and a `send_message` tool with an agent token; tested with the MCP Inspector. Owner: 3XIA00 + Saddler 5.5
+- [ ] **M3 — Agent harness on 3XIA00's PC**: connect → subscribe → on notification, read new messages → call Claude (plain completion, no tools) → `send_message`. Everything still on `localhost`. Owner: 3XIA00 + Saddler 5.5
+- [ ] **M4 — Deploy**: room server to Render with Neon; the harness on the PC points at the Render URL; share the link with friends. Owner: 3XIA00
 
 ---
 
@@ -247,6 +264,12 @@ Options:
 - Contributors: 3XIA00 (answers, phasing), Saddler 5.5 (folding in, two new questions)
 - Changes: Decision filled as a phase table. Two of my recommendations were not taken: QST-ROOM-SHAPE B became phase 1 A → phase 2 B → final C, and QST-ACCESS-COST A was overridden to no limits. QST-HOSTING moved from my A (PC + tunnel) to B (Render + Neon). New QST-AGENT-CONNECTION reconciles the server-side agent answer with ADR-0001's agents-on-owners'-machines answer and settles webhook vs. listener. New QST-PHASE1-MENTION checks how the @mention rule applies to 1:1 chats.
 - Outcome: Draft → Accepted (core decided; two open questions refine phase 1)
+
+### Iteration 3 (2026-11-19)
+- Trigger: 3XIA00 answered QST-AGENT-CONNECTION (B, with a notification-based wake design, asking for Saddler's view on its load and on a PC + open-port alternative) and QST-PHASE1-MENTION (A)
+- Contributors: 3XIA00 (answers, wake design), Saddler 5.5 (assessment, milestones)
+- Changes: phase table extended (agent connection row; phase-1 speak policy corrected to "every message" in 1:1). The answer to the sub-question asked in the ANS slot went into Decision, keeping the ANS slot as 3XIA00's answer. Action Items M0–M4 added. New concern: the agent-identity token on the public MCP endpoint.
+- Outcome: stays Accepted (no open questions)
 
 ---
 

@@ -155,10 +155,17 @@ I am thinking the agents would be runing on their owner's machine. So we dont pa
 ---
 
 ### QST-REPLY-LOOPS: How does a room stop two agents from replying to each other forever?
-- Status: deferred — 3XIA00: "We will discuss this in the future"; becomes live in phase 2+, when a room first holds two agents
+- Status: answered — phase 2+: a skill makes each agent decide whether to reply before replying; Saddler's two caveats noted below the block
 - Why deferring: Split out of QST-AGENT-INTEROP's answer. With agents on owners' machines, the platform can't control *how* an agent decides to reply, only what the room allows. Candidate mechanisms worth comparing later: a per-room cap on consecutive agent messages without a human message; agents only replying when @mentioned by a human; a "cooldown" per agent; or a rule enforced in the MCP server's `send_message` tool. Nothing in phase 1 needs this, but the MCP tool design should leave room for a server-side rule.
 
-**ANS:** [Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+For now, we are at phase 1. phase 1 is a simple web chat with my agent(only 1 agent). So it is human-agent loop. This question is for phase 2, Human-agents. The answer is that we write a skill to ask agents think whether he needs to answer the message before actually replies.
+
+---
+
+NOT: two caveats on QST-REPLY-LOOPS's answer, for phase 2 (Saddler 5.5, 2026-11-19). Neither changes the answer; both are about making it work.
+1. **Delivery: other people's agents aren't ours to install a skill into.** But the platform does control one channel into every agent: the MCP server. MCP servers can send `instructions` when a client connects, and every tool carries a description, which clients typically put in the model's context. So "the skill" can ship *with the MCP server*, e.g. a `send_message` description that says "before calling this, decide whether the room needs your reply." (Whether a given client actually shows server instructions to its model varies; verify with real clients in phase 2.)
+2. **Judgment alone doesn't guarantee the loop ends.** Two polite agents can each judge the other's last message worth answering ("thanks!" → "you're welcome!" → …). A cheap server-side backstop in `send_message`, such as refusing an agent's message after N agent messages in a row with no human message, guarantees termination even when judgment fails. That would complement the skill, not replace it.
 
 ---
 
@@ -180,6 +187,12 @@ I am thinking the agents would be runing on their owner's machine. So we dont pa
 - Trigger: 3XIA00 answered QST-COURSE-CONSTRAINTS (none) and QST-AGENT-INTEROP (agents on owners' machines; platform provides MCP + link)
 - Contributors: 3XIA00 (answers), Saddler 5.5 (folding in)
 - Changes: Status annotations added to both answers. Iteration 2's "the room server is the harness" reading is explicitly walked back: the harness is the agent side. Reply-loop prevention split into a deferred QST-REPLY-LOOPS. The tension between this answer and ADR-0003's server-side phase-1 agent is routed to ADR-0003 QST-AGENT-CONNECTION.
+- Outcome: stays Accepted
+
+### Iteration 4 (2026-11-19)
+- Trigger: 3XIA00 answered QST-REPLY-LOOPS (phase 2+: a skill that makes agents decide whether to reply)
+- Contributors: 3XIA00 (answer), Saddler 5.5 (status annotation, two caveats as a NOT note)
+- Changes: deferred → answered; caveats recorded on delivery (ship the skill through the MCP server's instructions and tool descriptions) and termination (a server-side backstop in `send_message`)
 - Outcome: stays Accepted
 
 ---

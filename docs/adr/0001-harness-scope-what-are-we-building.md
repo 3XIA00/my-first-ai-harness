@@ -105,7 +105,7 @@ Options:
 ---
 
 ### QST-COURSE-CONSTRAINTS: Is there an assignment text, rubric, or deadline for this project?
-- Status: unanswered — "this is a toy project" (QST-HARNESS-MEANING) suggests none; a one-word confirmation closes it
+- Status: answered — none: "there is no assignment, rubric or deadline" (3XIA00 in chat, 2026-11-19)
 - Why asking: This repo came from a professor's template for CIS MSE 7000. If the course has a written assignment, its definition of "harness," required deliverables, and due dates outrank every recommendation in this ADR — I'd rather read it than guess. "No limitations" may fully answer this; I'm asking once so the assumption is recorded rather than implied.
 - Need: explanation — paste or link the assignment text, or say "none beyond what I said"
 
@@ -115,8 +115,8 @@ Options: none (elicitation)
 
 Elicitation — no pick. If there is an assignment document, dropping it into `docs/` (or pasting it in chat) lets me re-check every recommendation above against it.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+N/A
 
 ---
 
@@ -130,22 +130,33 @@ An online platform where agents belonging to different people chat together in a
 
 **Rationale** (3XIA00's words): *"This is a toy project. Claude and ADR are tools to help me build my own harness. I am thinking if we can build a online platform so that agent from different people can chat in that website/room."*
 
-**Why it's still a harness** (Saddler 5.5's reading — catch me if this is wrong): the server that runs the room *is* an agent harness. It calls the model, decides when an agent speaks, executes (or refuses) its tool calls, and manages its context — but for many humans and eventually many agents at once, not one developer in a terminal. Everything that QST-BUILD-DEPTH covered still exists here, plus two problems a single-user harness never faces: **turn-taking** (when should an agent speak in a group?) and **untrusted input** (anyone with the link can talk to the agent and try to steer it).
+**Why it's still a harness** — *revised in Iteration 3; the original Iteration-2 reading follows, struck by the QST-AGENT-INTEROP answer:* 3XIA00's answer puts agents **on their owners' machines**, connecting to the platform through an MCP server we provide. So the harness is **not** the room server; it's the **agent side**: the program on the owner's machine that connects to the room over MCP, listens for messages, calls its model, and decides whether and what to reply. The room server is the shared *place*; each owner's harness is the *mind* that visits it. That split puts 3XIA00's two skills on two sides of one wire: building an MCP server (familiar) for the platform, and building the harness that drives an agent through it (new). The two problems named below (turn-taking, untrusted input) still hold; they now live mostly in the agent-side harness.
+
+~~*Iteration-2 reading (by Saddler 5.5):* the server that runs the room *is* an agent harness.~~ The original reading continues here for the record: It calls the model, decides when an agent speaks, executes (or refuses) its tool calls, and manages its context — but for many humans and eventually many agents at once, not one developer in a terminal. Everything that QST-BUILD-DEPTH covered still exists here, plus two problems a single-user harness never faces: **turn-taking** (when should an agent speak in a group?) and **untrusted input** (anyone with the link can talk to the agent and try to steer it).
 
 **Trade-offs accepted**: a public-facing web app brings deployment, access control, and API cost from day one — work that a local CLI harness would have postponed.
 
 ### Consequences
 - Step 1's design questions (chat shape, agent engine, access/cost, hosting, web stack, turn-taking) → [ADR-0003](0003-step-1-shareable-web-chat-with-my-agent.md).
 - [ADR-0002](0002-implementation-language-and-runtime.md)'s TypeScript lean gets stronger: the browser half must be JavaScript/TypeScript regardless.
-- The long-term multi-agent question (how *other people's* agents join) is parked below — step 1 doesn't need it answered.
+- ~~The long-term multi-agent question (how *other people's* agents join) is parked below.~~ **Answered in Iteration 3** (QST-AGENT-INTEROP): agents run on their owners' machines and each owner pays for their own tokens; the platform provides a link (the room) and an MCP server (how agents read and post). Whether *3XIA00's own* phase-1 agent should already work this way is a live tension with ADR-0003's QST-AGENT-ENGINE answer. See [ADR-0003 QST-AGENT-CONNECTION](0003-step-1-shareable-web-chat-with-my-agent.md).
 
 ---
 
 ## Open Follow-ups
 
 ### QST-AGENT-INTEROP: How do agents belonging to other people join a room?
-- Status: deferred — not needed until step 1 ships; revisit when the first friend wants to bring their own agent
+- Status: answered — agents run on owners' machines and join via our MCP server + a room link; reply-loop prevention split out to QST-REPLY-LOOPS
 - Why deferring: The end goal is a room where agents from different people talk to each other. That raises questions step 1 doesn't: does each person's agent run on *our* server (they give us a system prompt + API key), on *their* machine (connecting in over some protocol — e.g. MCP, or an agent-to-agent protocol like Google's A2A), or both? Who pays for each agent's tokens? How does the room stop two agents from replying to each other forever? Recording these now so step 1's design doesn't accidentally close any of these doors.
+
+**ANS:** (by 3XIA00)
+I am thinking the agents would be runing on their owner's machine. So we dont pay for their tokens. We just provide an mcp and a link. I dont have idea how to stop two agents from replying to each other forever. We will discuss this in the future. For phase 1, we just need to set up the website/room and make sure my agent can reply to messages.
+
+---
+
+### QST-REPLY-LOOPS: How does a room stop two agents from replying to each other forever?
+- Status: deferred — 3XIA00: "We will discuss this in the future"; becomes live in phase 2+, when a room first holds two agents
+- Why deferring: Split out of QST-AGENT-INTEROP's answer. With agents on owners' machines, the platform can't control *how* an agent decides to reply, only what the room allows. Candidate mechanisms worth comparing later: a per-room cap on consecutive agent messages without a human message; agents only replying when @mentioned by a human; a "cooldown" per agent; or a rule enforced in the MCP server's `send_message` tool. Nothing in phase 1 needs this, but the MCP tool design should leave room for a server-side rule.
 
 **ANS:** [Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
 
@@ -164,6 +175,12 @@ An online platform where agents belonging to different people chat together in a
 - Contributors: 3XIA00 (answer), Saddler 5.5 (folding the answer in)
 - Changes: Decision filled (D, multi-agent chat platform; step 1 = shareable web chat); QST-BUILD-DEPTH and QST-FIRST-MILESTONE superseded (successors in ADR-0003); QST-AGENT-INTEROP parked as deferred; QST-COURSE-CONSTRAINTS left open for a one-word confirmation. The ANS byline was written as the unfilled `⟦HUMAN-NAME⟧` sigil (the ADR Manager extension evidently hadn't reloaded the new `adrManager.humanName` setting) and was corrected to 3XIA00; the answer text is unchanged. My Iteration-1 recommendation (C, agent harness first) was not taken. I'm noting it here rather than deleting it.
 - Outcome: Draft → Accepted
+
+### Iteration 3 (2026-11-19)
+- Trigger: 3XIA00 answered QST-COURSE-CONSTRAINTS (none) and QST-AGENT-INTEROP (agents on owners' machines; platform provides MCP + link)
+- Contributors: 3XIA00 (answers), Saddler 5.5 (folding in)
+- Changes: Status annotations added to both answers. Iteration 2's "the room server is the harness" reading is explicitly walked back: the harness is the agent side. Reply-loop prevention split into a deferred QST-REPLY-LOOPS. The tension between this answer and ADR-0003's server-side phase-1 agent is routed to ADR-0003 QST-AGENT-CONNECTION.
+- Outcome: stays Accepted
 
 ---
 

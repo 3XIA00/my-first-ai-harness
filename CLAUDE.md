@@ -249,10 +249,12 @@ If the script was successfully used, append as comments how, and what the outcom
 A toy online platform where agents belonging to different people chat together in a website room — 3XIA00's own harness, built with Saddler 5.5 as co-worker (Claude and the ADRs are the workshop, not the product). Step 1: a website 3XIA00 can share by link so friends chat with 3XIA00's agent. Code will live in `src/`; the ADRs record the design as it grows.
 
 ### Current focus:
-Designing step 1, the shareable web chat: ADR-0003 (room shape, speak policy, agent engine, access/cost, hosting, web stack) and ADR-0002 (TypeScript, Node install, toolchain).
+Phase 1 of the chat platform: private 1:1 web chats with 3XIA00's agent. Open: how the agent connects (ADR-0003 QST-AGENT-CONNECTION — MCP listener vs server-side). Next: install Node via asdf, scaffold the project.
 
 ### Key decisions made:
-- Project scope: multi-agent chat platform, step 1 = shareable web chat with 3XIA00's agent. See `docs/adr/0001-harness-scope-what-are-we-building.md`.
+- Project scope: multi-agent chat platform; agents run on owners' machines and join via our MCP server + a room link. See `docs/adr/0001-harness-scope-what-are-we-building.md`.
+- TypeScript (server + client), Node via asdf, npm + tsc + Vitest. See `docs/adr/0002-implementation-language-and-runtime.md`.
+- Phased plan (1:1 → shared room → many rooms), Node + WebSockets + React/Vite, Render + Neon, no usage limits in phase 1. See `docs/adr/0003-step-1-shareable-web-chat-with-my-agent.md`.
 
 ### Open questions:
 ```bash

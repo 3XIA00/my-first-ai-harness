@@ -78,6 +78,11 @@ body {
   gap: 2px;
 }
 
+.messages li.anchor {
+  padding: 0;
+  background: none;
+}
+
 .messages li.mine {
   align-self: flex-end;
   background: var(--mine);
@@ -147,4 +152,15 @@ button.link {
 
 .error {
   color: #c0392b;
+}
+
+.crash {
+  max-height: 40vh;
+  overflow: auto;
+  padding: 12px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }

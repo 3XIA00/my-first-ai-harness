@@ -82,16 +82,23 @@ function Chat({ roomId, displayName }: { roomId: string; displayName: string }) 
   const [status, setStatus] = useState("Connecting…");
   const [draft, setDraft] = useState("");
   const socketRef = useRef<WebSocket | null>(null);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const bottomRef = useRef<HTMLLIElement | null>(null);
 
   useEffect(() => {
     const scheme = location.protocol === "https:" ? "wss" : "ws";
     const socket = new WebSocket(`${scheme}://${location.host}/ws`);
     socketRef.current = socket;
+    let disposed = false;
     const send = (event: ClientEvent) => socket.send(JSON.stringify(event));
 
-    socket.onopen = () => send({ type: "join", roomId, displayName });
+    socket.onopen = () => {
+      // Cleanup ran while we were still connecting (React StrictMode does this on purpose in
+      // development): close now that it's legal, without joining as a ghost participant.
+      if (disposed) return socket.close();
+      send({ type: "join", roomId, displayName });
+    };
     socket.onmessage = (e) => {
+      if (disposed) return;
       const event = JSON.parse(e.data as string) as ServerEvent;
       switch (event.type) {
         case "joined":
@@ -107,8 +114,16 @@ function Chat({ roomId, displayName }: { roomId: string; displayName: string }) 
           break;
       }
     };
-    socket.onclose = () => setStatus("Disconnected. Reload the page to rejoin.");
-    return () => socket.close();
+    socket.onclose = () => {
+      // A socket we threw away must not overwrite the live socket's status.
+      if (!disposed) setStatus("Disconnected. Reload the page to rejoin.");
+    };
+    return () => {
+      disposed = true;
+      // Closing a still-connecting socket is an error in browsers ("WebSocket is closed before
+      // the connection is established"); onopen closes it instead once it connects.
+      if (socket.readyState !== WebSocket.CONNECTING) socket.close();
+    };
   }, [roomId, displayName]);
 
   useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
@@ -143,7 +158,8 @@ function Chat({ roomId, displayName }: { roomId: string; displayName: string }) 
             <span className="body">{m.body}</span>
           </li>
         ))}
-        <div ref={bottomRef} />
+        {/* Scroll anchor. An <li>, not a <div>: an <ol> may only contain <li> elements. */}
+        <li ref={bottomRef} className="anchor" aria-hidden="true" />
       </ol>
       {status && <p className="status">{status}</p>}
       <form onSubmit={submit} className="row composer">

@@ -22,3 +22,6 @@ docs/adr/.working/
 # Node / build output
 node_modules/
 dist/
+
+# Manual-test screenshots (local only)
+test_screenshots/

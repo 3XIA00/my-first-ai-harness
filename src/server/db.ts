@@ -1,7 +1,7 @@
 // Database connection. Reads DATABASE_URL from the environment; `.env` (gitignored) is loaded
 // by loadEnv() so secrets never live in code (ADR-0004).
-import { readFile } from "node:fs/promises";
 import pg from "pg";
+import { SCHEMA_SQL } from "./schema.ts";
 
 /** Load `.env` into process.env if it exists. Uses Node's built-in loader; no dotenv. */
 export function loadEnv(): void {
@@ -34,8 +34,7 @@ export function createPool(connectionString = databaseUrl()): pg.Pool {
   return new pg.Pool({ connectionString, max: 5 });
 }
 
-/** Apply schema.sql. Every statement is IF NOT EXISTS, so this is safe to repeat. */
+/** Apply the schema. Every statement is IF NOT EXISTS, so this is safe to repeat. */
 export async function migrate(pool: pg.Pool): Promise<void> {
-  const sql = await readFile(new URL("./schema.sql", import.meta.url), "utf8");
-  await pool.query(sql);
+  await pool.query(SCHEMA_SQL);
 }

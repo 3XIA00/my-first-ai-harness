@@ -13,3 +13,8 @@ __pycache__/
 
 # ADR Manager extension working drafts + backups — local editor state
 docs/adr/.working/
+
+# Secrets (API keys, agent tokens, DB URLs) — never committed; see ADR-0003 QST-MODEL-ACCESS
+.env
+.env.*
+!.env.example

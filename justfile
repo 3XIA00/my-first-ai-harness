@@ -520,15 +520,19 @@ unanswered:
 # The day-one verification gate (porthole item 16): real checks that exist at
 # birth, plus a marked slot for the project's own gate once it has one.
 [group('status')]
-[doc("Day-one gate: instantiate-check + registry validation (+ your project gate — edit me)")]
+[doc("Gate: instantiate-check + registry validation + template tests + TypeScript typecheck & tests")]
 gate:
     #!/usr/bin/env bash
     set -euo pipefail
     just instantiate-check
     python3 scripts/groups-lookup.py --validate
     python3 -m unittest discover -s tests -q
-    # ADD YOUR PROJECT'S OWN GATE HERE when it exists (test suite, build, linter)
-    echo "✅ gate green (day-one checks; project gate slot above)"
+    # Project gate (ADR-0002 QST-TOOLCHAIN-GATE): typecheck + Vitest. The tests use the real
+    # database in .env's DATABASE_URL (the Neon dev branch, ADR-0004 QST-TEST-DB), so this
+    # step needs network access. agent.env puts asdf's Node on PATH for non-interactive shells.
+    source .claude/agent.env >/dev/null
+    npm run --silent check
+    echo "✅ gate green"
 
 # Is this instance fully instantiated? Greps for remaining ⟦SIGIL⟧ placeholders
 # (the closed registry: docs/adr/templates/placeholders.yaml) and warns on

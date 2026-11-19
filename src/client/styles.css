@@ -1,0 +1,150 @@
+:root {
+  --bg: #f6f4f1;
+  --panel: #ffffff;
+  --text: #1f1d1a;
+  --muted: #6b665f;
+  --accent: #a0522d;
+  --mine: #f3e3d8;
+  --agent: #e7eef5;
+  --border: #e2ddd6;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1816;
+    --panel: #24211e;
+    --text: #ece8e3;
+    --muted: #a39d95;
+    --accent: #d08158;
+    --mine: #3a2b22;
+    --agent: #22303c;
+    --border: #3a3631;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+.card {
+  max-width: 420px;
+  margin: 15vh auto 0;
+  padding: 24px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--panel);
+  border-inline: 1px solid var(--border);
+}
+
+.chat header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.messages li {
+  max-width: 80%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.messages li.mine {
+  align-self: flex-end;
+  background: var(--mine);
+}
+
+.messages li.agent {
+  background: var(--agent);
+}
+
+.who {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.composer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+input {
+  flex: 1;
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button {
+  font: inherit;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.link {
+  background: none;
+  color: var(--accent);
+  padding: 0;
+}
+
+.status {
+  margin: 0;
+  padding: 4px 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.error {
+  color: #c0392b;
+}

@@ -3,6 +3,7 @@
 // HTTP
 //   POST /api/rooms   → { roomId }      create a room; its id is the shareable link
 //   GET  /api/health  → { ok: true }
+//   /mcp                                the MCP endpoint agents connect to (ADR-0005, mcp.ts)
 // WebSocket at /ws — see src/shared/protocol.ts for the messages.
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type pg from "pg";
@@ -14,6 +15,7 @@ import type {
   Participant,
   ServerEvent,
 } from "../shared/protocol.ts";
+import { McpEndpoint, type AgentConfig } from "./mcp.ts";
 import { RoomError, RoomService } from "./rooms.ts";
 
 export interface RoomServer {
@@ -22,10 +24,17 @@ export interface RoomServer {
   close(): Promise<void>;
 }
 
-export function createRoomServer(pool: pg.Pool): RoomServer {
+export interface RoomServerOptions {
+  /** The (phase 1: single) agent allowed to connect over MCP. Without it, /mcp is disabled. */
+  agent?: AgentConfig;
+}
+
+export function createRoomServer(pool: pg.Pool, options: RoomServerOptions = {}): RoomServer {
   const rooms = new RoomService(pool);
+  const mcp = new McpEndpoint(rooms, options.agent);
   const server = createServer((req, res) => {
-    handleHttp(rooms, req, res).catch((err) => {
+    const handler = req.url?.split("?")[0] === "/mcp" ? mcp.handle(req, res) : handleHttp(rooms, req, res);
+    handler.catch((err) => {
       console.error("HTTP handler failed:", err);
       if (!res.headersSent) sendJson(res, 500, { error: "Internal error" });
     });
@@ -37,12 +46,15 @@ export function createRoomServer(pool: pg.Pool): RoomServer {
   return {
     server,
     rooms,
-    close: () =>
-      new Promise<void>((resolve, reject) => {
+    close: async () => {
+      await mcp.closeAll();
+      await new Promise<void>((resolve, reject) => {
         for (const client of wss.clients) client.terminate();
         wss.close();
+        server.closeAllConnections();
         server.close((err) => (err ? reject(err) : resolve()));
-      }),
+      });
+    },
   };
 }
 

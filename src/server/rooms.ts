@@ -87,8 +87,12 @@ export class RoomService {
     return message;
   }
 
-  /** The room's messages, oldest first (at most `limit`, the most recent ones). */
-  async history(roomId: string, limit = 200): Promise<ChatMessage[]> {
+  /**
+   * The room's messages, oldest first: the most recent `limit` of them, or, with `afterId`,
+   * those newer than that message id. "Everything after the last id I saw" is how an agent
+   * catches up after a notification, or after missing some while disconnected (ADR-0005).
+   */
+  async history(roomId: string, limit = 200, afterId?: string): Promise<ChatMessage[]> {
     const { rows } = await this.#pool.query<{
       id: string;
       participant_id: string;
@@ -100,11 +104,11 @@ export class RoomService {
       `SELECT * FROM (
          SELECT m.id, m.participant_id, p.display_name, p.kind, m.body, m.created_at
          FROM messages m JOIN participants p ON p.id = m.participant_id
-         WHERE m.room_id = $1
+         WHERE m.room_id = $1 AND ($3::bigint IS NULL OR m.id > $3::bigint)
          ORDER BY m.id DESC
          LIMIT $2
        ) recent ORDER BY id ASC`,
-      [roomId, limit],
+      [roomId, limit, afterId ?? null],
     );
     return rows.map((r) => ({
       id: String(r.id),
@@ -115,6 +119,61 @@ export class RoomService {
       body: r.body,
       createdAt: r.created_at.toISOString(),
     }));
+  }
+
+  // ---- agents (ADR-0005) ---------------------------------------------------------------
+  // Phase 1 has one agent, identified by its configured name; it's in at most one room.
+  // Its membership lives in the participants table (left_at IS NULL = present), so it
+  // survives server restarts and agent reconnects.
+
+  /** The room this agent is currently in, if any. */
+  async agentPresence(agentName: string): Promise<Participant | null> {
+    const { rows } = await this.#pool.query<{ id: string; room_id: string }>(
+      `SELECT id, room_id FROM participants
+       WHERE kind = 'agent' AND display_name = $1 AND left_at IS NULL
+       ORDER BY created_at DESC LIMIT 1`,
+      [agentName],
+    );
+    const row = rows[0];
+    return row ? { id: row.id, roomId: row.room_id, kind: "agent", displayName: agentName } : null;
+  }
+
+  /**
+   * Put the agent in a room. Re-joining its current room returns the same participant (so a
+   * reconnecting agent doesn't appear twice); joining a different room is refused while it's
+   * still in one (phase-1 rule: one agent, one room).
+   */
+  async joinAsAgent(roomId: string, agentName: string): Promise<Participant> {
+    const present = await this.agentPresence(agentName);
+    if (present?.roomId === roomId) return present;
+    if (present) {
+      throw new RoomError(
+        `Already in room ${present.roomId}. Call leave_room first (one agent, one room in phase 1).`,
+      );
+    }
+    // Coming back to a room it left earlier: reuse that participant, so its old messages
+    // still count as its own.
+    const { rows } = await this.#pool.query<{ id: string }>(
+      `UPDATE participants SET left_at = NULL
+       WHERE id = (SELECT id FROM participants
+                   WHERE room_id = $1 AND kind = 'agent' AND display_name = $2
+                   ORDER BY created_at DESC LIMIT 1)
+       RETURNING id`,
+      [roomId, agentName],
+    );
+    const id = rows[0]?.id;
+    if (id) return { id, roomId, kind: "agent", displayName: agentName };
+    return this.addParticipant(roomId, "agent", agentName);
+  }
+
+  /** Take the agent out of a room. Returns false if it wasn't there. */
+  async leaveAsAgent(roomId: string, agentName: string): Promise<boolean> {
+    const { rowCount } = await this.#pool.query(
+      `UPDATE participants SET left_at = now()
+       WHERE room_id = $1 AND kind = 'agent' AND display_name = $2 AND left_at IS NULL`,
+      [roomId, agentName],
+    );
+    return (rowCount ?? 0) > 0;
   }
 
   /** Subscribe to new messages in one room. Returns the unsubscribe function. */

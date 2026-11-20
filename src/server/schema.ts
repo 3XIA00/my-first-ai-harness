@@ -29,4 +29,8 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 
 CREATE INDEX IF NOT EXISTS messages_room_id_id ON messages (room_id, id);
+
+-- M2 (ADR-0005): an agent leaves a room to join another (one room at a time in phase 1).
+-- NULL = still in the room. Kept in the database so a server restart doesn't forget it.
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS left_at timestamptz;
 `;

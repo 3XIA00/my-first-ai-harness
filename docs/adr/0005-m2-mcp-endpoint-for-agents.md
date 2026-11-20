@@ -143,6 +143,12 @@ A. Your explanation "The final phase has other people's agents connecting (ADR-0
 - Changes: Decision filled. Added a `leave_room` tool, because "one friend at a time" under the one-room rule needs a way to switch rooms.
 - Outcome: Draft → Accepted
 
+### Iteration 3 (2026-11-19)
+- Trigger: M2 implemented
+- Contributors: Saddler 5.5
+- Changes: built in `src/server/mcp.ts`, plus `left_at` on participants and agent methods in `rooms.ts`. Verified against the installed SDK (`@modelcontextprotocol/sdk` 1.32.2) rather than memory. `McpServer` does **not** implement `resources/subscribe`, so the subscribe/unsubscribe handlers are registered on its underlying `Server`, with the `resources.subscribe` capability declared. That resolves the Assumption above. The SDK client delivers `notifications/resources/updated` to application code through `setNotificationHandler(ResourceUpdatedNotificationSchema, …)`, which settles QST-NOTIFY-SHAPE's open doubt for M3. The server sends `instructions` on connect (join, subscribe, read after_id, ignore your own messages, reply): the delivery channel ADR-0001 QST-REPLY-LOOPS's note anticipated. Agent identity by name is recorded as TD-1 in `docs/TECHNICAL-DEBT.md`.
+- Outcome: stays Accepted; M2 awaiting 3XIA00's Inspector check
+
 ---
 
 ## Links

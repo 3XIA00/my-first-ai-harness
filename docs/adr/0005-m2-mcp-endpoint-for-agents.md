@@ -9,8 +9,8 @@ adr teaching map: the example is not the teaching — these are the up-links fro
 # M2 — The MCP Endpoint Agents Connect To
 
 - **Date**: 2026-11-19
-- **Iteration**: 1
-- **Status**: Draft
+- **Iteration**: 2
+- **Status**: Accepted
 - **Deciders**: 3XIA00; Saddler 5.5 (claude-opus-5-5)
 
 **TL;DR**: The room server gains an MCP endpoint at `/mcp` (Streamable HTTP, bearer-token auth) with tools to join a room, read messages, and send messages, plus a subscribable room resource whose "updated" notification wakes the agent; phase 1 limits one agent to one room.
@@ -71,7 +71,7 @@ Design inherited from ADR-0003 QST-AGENT-CONNECTION (answer B, 3XIA00's design):
 ## Questions
 
 ### QST-ROOM-SHARING: With one agent in one room, how do friends use it?
-- Status: unanswered
+- Status: answered — A for phase 1 (one friend at a time; 3XIA00 may also be present), C for phases 2–3, "agent decides" for the final product
 - Why asking: ADR-0003 planned phase 1 as *private* 1:1 chats, one room per friend. But "1 agent 1 room" means the agent is in exactly one room. Two friends who open that room's link are both in it and see each other's messages, which is phase 2's shared room arriving early. Nothing breaks either way; I'm checking which experience you intend, because it decides when the agent replies (in a shared room, does it answer every message, or only @mentions, per ADR-0003 QST-SPEAK-POLICY?).
 - Need: pick a letter (or override — any shape answers)
 
@@ -84,13 +84,13 @@ Options:
 
 **A — One friend at a time.** *Rationale*: It keeps phase 1 exactly what ADR-0003 said (1:1 chats, agent replies to every message, no @mention rule, per QST-PHASE1-MENTION), while respecting "1 agent 1 room." Switching friends costs one new link, cheap at toy scale. B and C both pull phase-2 behavior into phase 1. C is the better of the two if you *want* a group room now, because B's cost and noise grow with every friend in the room. *Confidence*: 0.65 — because A matches the written plan, but how you actually want to test with friends is your call. *If wrong*: if you'd rather invite several friends into one room right away, this flips to **C**.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+A(At most 2 people in one room, my friend and I, but I expect only my friend speaks.) for phase 1, C for phase 2/3, B(but agent decides which message to answer) for final product.
 
 ---
 
 ### QST-NOTIFY-SHAPE: What does the "new message" notification carry?
-- Status: unanswered
+- Status: answered — A: standard `notifications/resources/updated` with `room://<id>`, then `get_messages(after_id)`
 - Why asking: Your example, *"from room x, new message number 123: text123"*, puts the room, the message number, and the text *in the notification*. MCP has a standard notification for "this resource changed", `notifications/resources/updated`, but it carries only the resource's address (`room://x`), not the content; the client then reads what's new. MCP also allows a server to send its own custom notification type with any payload. The trade-off is interoperability vs. one fewer round-trip.
 - Need: pick a letter (or override — any shape answers)
 
@@ -103,8 +103,8 @@ Options:
 
 **A — Standard `resources/updated`, then read.** *Rationale*: The final phase has *other people's* agents connecting (ADR-0001 QST-AGENT-INTEROP), likely through MCP clients we didn't write, and only the standard notification is guaranteed to mean something to them. A also gets your example's information: the room is in the URI, and the read returns message 123 with its text, with one extra request. That request is cheap and has a hidden benefit: if the agent was briefly disconnected and missed notifications, "everything after the last id I saw" catches up automatically, while a notification carrying a single message can't. B is simpler for our own harness only; C doubles the surface for little gain in phase 1. *Confidence*: 0.7 — because the standard path is clearly the interoperable one, but I haven't yet verified how the TypeScript SDK's client exposes `resources/updated` to application code. *If wrong*: if the SDK makes subscriptions awkward to receive in our harness, this flips to **B**, with a note to add A before other people's agents arrive.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+A. Your explanation "The final phase has other people's agents connecting (ADR-0001 QST-AGENT-INTEROP), likely through MCP clients we didn't write, and only the standard notification is guaranteed to mean something to them" makes sense.
 
 ---
 
@@ -112,7 +112,11 @@ Options:
 
 **Decided (3XIA00, chat, 2026-11-19)**: one agent, one room in phase 1; multi-room later, with the room identified in the notification.
 
-Pending: QST-ROOM-SHARING, QST-NOTIFY-SHAPE. The proposed design above stands unless an answer changes it.
+**Chosen**: the proposed design above, as written, with:
+- **Room use** (QST-ROOM-SHARING): phase 1 = one friend at a time in the agent's single room. At most two humans are present (the friend, and possibly 3XIA00, who mostly watches), and the agent replies to every human message. Phases 2–3: @mention only (C). Final product: the agent decides which messages to answer (B with judgment, i.e. ADR-0003's speak policy C and ADR-0001 QST-REPLY-LOOPS's skill).
+- **Notification** (QST-NOTIFY-SHAPE): standard `notifications/resources/updated` for `room://<id>`, then `get_messages(after_id)`. 3XIA00 accepted the interoperability argument (other people's agents will connect through MCP clients we didn't write).
+
+**Consequences**: no speak-policy code in the server, since it's the agent harness's choice (M3: reply to every human message, never to its own). Switching friends = the agent leaves its room and joins the new link's room. That means M2 needs a way to leave: `join_room` for a *different* room is refused while the agent is in one, so add a `leave_room` tool.
 
 ---
 
@@ -132,6 +136,12 @@ Pending: QST-ROOM-SHARING, QST-NOTIFY-SHAPE. The proposed design above stands un
 - Contributors: 3XIA00 (room limit, notification idea), Saddler 5.5 (design, two questions)
 - Changes: initial draft
 - Outcome: Draft
+
+### Iteration 2 (2026-11-19)
+- Trigger: 3XIA00 answered both questions (room use phased A → C → agent-decides; notification A); during drafting, 3XIA00 also proposed per-room listeners for multi-room phases (recorded in Open Follow-ups)
+- Contributors: 3XIA00 (answers), Saddler 5.5 (Decision)
+- Changes: Decision filled. Added a `leave_room` tool, because "one friend at a time" under the one-room rule needs a way to switch rooms.
+- Outcome: Draft → Accepted
 
 ---
 

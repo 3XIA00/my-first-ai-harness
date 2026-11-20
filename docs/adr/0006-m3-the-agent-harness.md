@@ -184,6 +184,16 @@ B. Maybe we will modify the number or even add compression when we move to futur
 - Changes: Decision filled; history window made configurable per 3XIA00's "make sure the code is flexible"
 - Outcome: Draft → Accepted
 
+### Iteration 3 (2026-11-19)
+- Trigger: M3 implemented
+- Contributors: Saddler 5.5
+- Changes: built as designed (`src/agent/`: `index.ts`, `harness.ts`, `conversation.ts`, `llm.ts`, `persona.md`). Two additions beyond the design:
+  1. **Automatic room switching.** If a crash left the agent in another room, `join_room`'s refusal names that room; the harness leaves it and joins the new one, since "one friend at a time" makes switching the normal case.
+  2. **Conversations never open with the agent's own reply** (a window can cut off the question it answered).
+- **Mutation checks**: removing the "only reply if a human spoke" rule fails 2 tests (the agent answers itself); allowing turns to overlap fails the burst test (3 concurrent model calls seen).
+- The live OpenRouter test is opt-in (`npm run test:live`, `LIVE=1`) and excluded from `just gate`. It was not run by Saddler, since it spends 3XIA00's credit.
+- Outcome: stays Accepted; M3 awaiting 3XIA00's live test and a real chat
+
 ---
 
 ## Links

@@ -9,8 +9,8 @@ adr teaching map: the example is not the teaching — these are the up-links fro
 # M3 — The Agent Harness
 
 - **Date**: 2026-11-19
-- **Iteration**: 1
-- **Status**: Draft
+- **Iteration**: 2
+- **Status**: Accepted
 - **Deciders**: 3XIA00; Saddler 5.5 (claude-opus-5-5)
 
 **TL;DR**: A program on 3XIA00's PC (`npm run agent -- <room link>`) that connects to `/mcp`, joins one room, and on each update notification reads what's new, skips its own messages, asks Claude Haiku 5.5 (via OpenRouter) for a reply in the persona 3XIA00 writes, and posts it. Three questions: persona, how to call OpenRouter, how much history the model sees.
@@ -92,7 +92,7 @@ Decisions this ADR builds on, all by 3XIA00:
 ## Questions
 
 ### QST-PERSONA: Who is the agent?
-- Status: unanswered
+- Status: answered
 - Why asking: The system prompt decides how TESTIE1 talks: tone, what it's for, what it won't do. It's the part of this project friends actually experience, and the most personal decision in it. It will live in `src/agent/persona.md`, plain text you can edit any time without code changes.
 - Need: pick a letter (or override — any shape answers); for B, a sentence or two about the vibe you want helps
 
@@ -105,13 +105,13 @@ Options:
 
 **B — I draft, you edit.** *Rationale*: A blank page is the hardest place to start, and C postpones the most personal part of the project. A draft gives you something concrete to react to, and it can carry two things friends won't notice until they're missing: keep replies short (it's a chat, not an essay), and don't claim abilities it doesn't have (it has no tools: no web, no memory beyond this room). *Confidence*: 0.7 — because a draft is usually the fastest route to a voice you like, but you may already have a clear picture, in which case A is better. *If wrong*: if you already know exactly who TESTIE1 is, this flips to **A**.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+B. Here are some ideas for you to start with. A friendly chat bot who answers questions but not supporting with complex tasks like coding. Users can chat with the agent about daily life, brainstorming etc.(Model is Haiku 5.5 through openrouter so honestly, I think that is the best he can do)
 
 ---
 
 ### QST-LLM-CLIENT: How does the harness call OpenRouter?
-- Status: unanswered
+- Status: answered
 - Why asking: `llm.ts` is the one place that talks to the model. OpenRouter accepts the widely used "chat completions" request format (OpenAI-style) at `https://openrouter.ai/api/v1/chat/completions`, and also offers its own SDKs. The choice affects how much of the model call you can see and how many dependencies we add.
 - Need: pick a letter (or override — any shape answers)
 
@@ -124,13 +124,13 @@ Options:
 
 **A — Plain `fetch`.** *Rationale*: This project's goal is to understand harnesses (ADR-0001), and the model call is the heart of one. With `fetch` you can read exactly what the model receives and returns, including the HTTP status codes you'll hit when the $10 runs low (OpenRouter returns `402 Payment Required`). Node 26 has `fetch` built in, so it costs zero dependencies. Retries aren't needed in phase 1: a failed reply is logged and the next message retries (design step 6). The one-function boundary from ADR-0003 QST-MODEL-ACCESS means switching to B later changes one file. *Confidence*: 0.75 — because the call is small and stable and visibility is the stated goal; B would win if we needed streaming or tool calls, which phase 1 doesn't. *If wrong*: if phase 2+ adds tools or streaming replies, this flips to **B**.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+A. If I am understanding right, with A we can get every information through the process so that we can customize our error handlers.
 
 ---
 
 ### QST-HISTORY-WINDOW: How much of the conversation does the model see on each reply?
-- Status: unanswered
+- Status: answered
 - Why asking: The model has no memory of its own. On every reply the harness re-sends the conversation, and the model "remembers" exactly what's in it. More history means better continuity and more tokens per reply. Rough cost per reply at Haiku 5.5 prices (persona ~300 tokens, ~40 tokens per chat message, ~200-token reply):
   - last **20** messages: ≈ 1,100 tokens in → ≈ **$0.0002**/reply → ~45,000 replies per $10
   - last **50** messages: ≈ 2,300 tokens in → ≈ **$0.0003**/reply → ~30,000 replies per $10
@@ -146,14 +146,19 @@ Options:
 
 **B — Last 50 messages.** *Rationale*: At Haiku 5.5 prices the difference between 20 and 50 is a hundredth of a cent per reply, so cost doesn't decide this. Forgetting what a friend said ten minutes ago is the kind of failure friends *do* notice, so the larger window is worth it. C has no ceiling, which a fixed window does. 50 is also the most `get_messages` returns per call (its default), so one call fills the window. *Confidence*: 0.7 — because the cost math is solid, but "how long are your friends' chats" is a guess. *If wrong*: if friends' chats turn out to be long sessions where early context matters (e.g. planning something over an evening), this flips to **C** with a cap.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+B. Maybe we will modify the number or even add compression when we move to future phases. So make sure the code is flexible.
 
 ---
 
 ## Decision
 
-Pending the three questions. The proposed design stands for everything else.
+**Chosen**: the proposed design, with:
+- **Persona** (QST-PERSONA B): Saddler drafts `src/agent/persona.md` from 3XIA00's brief: *"A friendly chat bot who answers questions but not supporting with complex tasks like coding. Users can chat with the agent about daily life, brainstorming etc."* 3XIA00 edits freely. 3XIA00's note on scope: Haiku 5.5 is a small model, and the persona should play to that (light conversation) rather than pretend otherwise.
+- **Model call** (QST-LLM-CLIENT A): plain `fetch` to OpenRouter in `src/agent/llm.ts`. 3XIA00's reading, confirmed: owning the HTTP call means every status code and error body is visible, so each failure (bad key 401, credit out 402, rate limit 429, provider down 5xx) gets its own clear handling.
+- **History** (QST-HISTORY-WINDOW B): the last **50** messages, as a configurable setting (`AGENT_HISTORY` in `.env`, default 50), with the conversation built in one function (`buildConversation`), so a future phase can change the number or add compression (e.g. summarizing older messages) in one place.
+
+**Status of the answers' statuses**: all three answered by 3XIA00 on 2026-11-19.
 
 ---
 
@@ -172,6 +177,12 @@ Pending the three questions. The proposed design stands for everything else.
 - Contributors: Saddler 5.5 (design, three questions, OpenRouter model facts verified from its public model list)
 - Changes: initial draft
 - Outcome: Draft
+
+### Iteration 2 (2026-11-19)
+- Trigger: 3XIA00 answered all three questions (B, A, B)
+- Contributors: 3XIA00 (answers, persona brief), Saddler 5.5 (Decision)
+- Changes: Decision filled; history window made configurable per 3XIA00's "make sure the code is flexible"
+- Outcome: Draft → Accepted
 
 ---
 

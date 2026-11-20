@@ -279,7 +279,7 @@ A lets stick with the original idea. If when developing, we find some serious pr
 ---
 
 ### QST-HOSTING-COST: Where should phases 1–2 run, given that a paid backend isn't worth it for a toy?
-- Status: unanswered
+- Status: answered — E (GitHub Pages + Render free + Neon); fallback C (Pages + PC server + Neon) if Render's free tier stops working or asks for payment
 - Why asking: 3XIA00's professor advised (relayed in chat, 2026-11-19) that a toy doesn't justify Render's ~$7/month backend; GitHub Pages + Neon should be enough, or Pages + 3XIA00's PC as the server + Neon. He also suggested Neon Auth could replace backend auth. This reopens QST-HOSTING (B, Render + Neon) and QST-HOSTING-PAGES (A, because Pages only serves static files). **New fact, checked 2026-11-19 against Render's docs** (render.com/docs/free): Render has a **free** tier for web services. Its costs: it spins down after 15 min without incoming traffic, waking "takes about one minute"; 750 free hours/month (one always-on service ≈ 744, so it fits); WebSockets supported; "Render might restart a Free web service at any time." The ~$7 is the cheapest *paid* plan (the pricing page didn't render its prices, so that figure is unconfirmed). **Also relevant**: in phase 1 the agent already runs on 3XIA00's PC (QST-AGENT-HOSTED A), so the agent replies only while the PC is on, whichever option hosts the website.
 - Need: pick a letter (or override — any shape answers)
 
@@ -298,8 +298,8 @@ Options:
 
 **On Neon Auth** (3XIA00 leans "no auth in phase 1"; Saddler agrees): Neon Auth is a sign-in system for app users. It's needed only in **D**, where browsers touch the database directly and something must stop strangers from reading or deleting everything. In A, B, and C the **server** holds the database password and browsers never touch the database, so phase 1 needs no user auth, as ADR-0003 QST-ACCESS-COST decided. It also wouldn't replace the agent token on `/mcp` (ADR-0005), which answers a different question: "is this caller 3XIA00's agent?", not "is this visitor signed in?".
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+E. If render free tier does not work and want me to pay, we switch to github page + local server + neon
 
 ---
 
@@ -315,7 +315,7 @@ Options:
 | **Agent engine** (QST-AGENT-ENGINE) | **C** — a plain model call per reply, no tools | C | tools (web, code…) considered *after* phase 2 |
 
 - **Access/cost** (QST-ACCESS-COST): **override — no limits in phase 1**; testers are trusted friends. Later the owner can make their agent "stop listening" to a room to stop costs or abuse. If the platform is ever published, revisit this.
-- **Hosting** (QST-HOSTING): **B — Render** (server) **+ Neon** (Postgres database), chosen by 3XIA00. This also decides that chat history is stored in Postgres.
+- **Hosting** (QST-HOSTING → refined by QST-HOSTING-COST, 2026-11-19): **the page on GitHub Pages, the room server (chat + MCP) on Render's *free* tier, and Neon** (option E). That's $0, and shareable with the class as the professor encourages. **Fallback** (3XIA00's words): *"If render free tier does not work and want me to pay, we switch to github page + local server + neon"* (option C). Chat history is stored in Postgres either way. *(Original: "B — Render (server) + Neon", which didn't specify the plan or where the page is served.)*
 - **Web stack** (QST-WEB-STACK): **A — plain Node server (WebSockets) + React client via Vite**, *"since it is the most widely documented way."*
 - **Model access** (QST-MODEL-ACCESS): **A — the professor's $10 OpenRouter key**, kept in a gitignored `.env` on 3XIA00's PC (the agent runs there, so the key never goes to Render). The model call sits behind one function (`generateReply(history)`), since OpenRouter speaks the OpenAI-style format.
 - **Agent location** (QST-AGENT-HOSTED): **stays on 3XIA00's PC, behind the MCP listener.** The OpenRouter key doesn't change that, because the key is the agent → model link and the listener is the room → agent link. **Fallback**, in 3XIA00's words: *"If when developing, we find some serious problem, we might switch to B"* (hosted agent inside the room server). Keeping the model call behind one function (`generateReply`) keeps that switch cheap.
@@ -355,7 +355,7 @@ Options:
 - [x] **M1 — Room server + web page, humans only** *(done 2026-11-19: 3XIA00's two-tab check passed after fixing the "blank page after Join" bug; see `docs/vignettes/2026-11-19-the-stub-that-agreed-with-the-bug.md`)*: Node + WebSockets + React/Vite; two browser tabs can chat in a 1:1 room; messages stored in Postgres (Neon dev branch, or local Postgres). Runs on `localhost`. Owner: 3XIA00 + Saddler 5.5. *2026-11-19: built per [ADR-0004](0004-m1-project-scaffold-and-humans-only-chat.md); 4 integration tests green against the Neon dev branch; server smoke-tested. Remaining: 3XIA00's hands-on check in two browser tabs (`npm run dev`).*
 - [x] **M2 — MCP endpoint on the room server** *(done 2026-11-19: 3XIA00 ran the loop by hand in MCP Inspector v2.16: join_room → subscribe `room://…` → browser message → `notifications/resources/updated` → `get_messages(after_id=66)` returned id 67 → `send_message` appeared in the browser as TESTIE1 🤖)*: a room resource with subscription + notifications, and a `send_message` tool with an agent token; tested with the MCP Inspector. Owner: 3XIA00 + Saddler 5.5. *2026-11-19: built per [ADR-0005](0005-m2-mcp-endpoint-for-agents.md); 5 integration tests with the SDK's own MCP client as the agent, green against the dev branch, mutation-checked (disabling notifications fails the wake-up test). Remaining: 3XIA00's hands-on check with the MCP Inspector.*
 - [ ] **M3 — Agent harness on 3XIA00's PC**: connect → subscribe → on notification, read new messages → call Claude (plain completion, no tools) → `send_message`. Everything still on `localhost`. Owner: 3XIA00 + Saddler 5.5
-- [ ] **M4 — Deploy**: room server to Render with Neon; the harness on the PC points at the Render URL; share the link with friends. Owner: 3XIA00
+- [ ] **M4 — Deploy** *(revised 2026-11-19 for QST-HOSTING-COST = E)*: the page to **GitHub Pages** (a GitHub Actions workflow; hash routes `…/#/r/<id>`; the server's address set at build time; a "waking the server up…" state for the free tier's cold start); the room server to **Render's free tier** with Neon's main branch (`DATABASE_URL`) and `AGENT_TOKEN` as settings, allowing the Pages origin; the harness on the PC points at the Render URL; **the GitHub repo made public** (free Pages requires it); share the link. Owner: 3XIA00 + Saddler 5.5
 
 ---
 
@@ -401,6 +401,12 @@ Options:
 - Trigger: 3XIA00 asked whether the OpenRouter key removes the need for a listener (new QST-AGENT-HOSTED), answered A, and asked whether to enable Neon Auth
 - Contributors: 3XIA00 (question, answer), Saddler 5.5 (two-link explanation, QST-AGENT-HOSTED, Decision entries)
 - Changes: Decision gains "agent location" (listener stays; hosted agent named as fallback) and "Neon Auth: off"
+- Outcome: stays Accepted; no open questions
+
+### Iteration 8 (2026-11-19)
+- Trigger: 3XIA00's professor advised against a ~$7/month backend and encouraged sharing via GitHub Pages; new QST-HOSTING-COST (Render's free tier checked against its docs); 3XIA00 answered E with C as the fallback
+- Contributors: 3XIA00 (professor's advice, answer), Saddler 5.5 (options A–E, recommendation revised A → E)
+- Changes: Hosting decision refined (Pages + Render free + Neon); M4 action item rewritten for Pages. Neon Auth stays off (only needed if browsers touched the database directly, option D, which wasn't chosen).
 - Outcome: stays Accepted; no open questions
 
 ---

@@ -278,6 +278,28 @@ A lets stick with the original idea. If when developing, we find some serious pr
 
 ---
 
+### QST-HOSTING-COST: Where should phases 1–2 run, given that a paid backend isn't worth it for a toy?
+- Status: unanswered
+- Why asking: 3XIA00's professor advised (relayed in chat, 2026-11-19) that a toy doesn't justify Render's ~$7/month backend; GitHub Pages + Neon should be enough, or Pages + 3XIA00's PC as the server + Neon. He also suggested Neon Auth could replace backend auth. This reopens QST-HOSTING (B, Render + Neon) and QST-HOSTING-PAGES (A, because Pages only serves static files). **New fact, checked 2026-11-19 against Render's docs** (render.com/docs/free): Render has a **free** tier for web services. Its costs: it spins down after 15 min without incoming traffic, waking "takes about one minute"; 750 free hours/month (one always-on service ≈ 744, so it fits); WebSockets supported; "Render might restart a Free web service at any time." The ~$7 is the cheapest *paid* plan (the pricing page didn't render its prices, so that figure is unconfirmed). **Also relevant**: in phase 1 the agent already runs on 3XIA00's PC (QST-AGENT-HOSTED A), so the agent replies only while the PC is on, whichever option hosts the website.
+- Need: pick a letter (or override — any shape answers)
+
+Options:
+- **A — Render free tier + Neon ($0)**: the current plan, unchanged, on the free tier. **No code changes.** Costs: the first visitor after 15 idle minutes waits about a minute; Render may restart the server, which the agent's reconnect logic (ADR-0006 design step 7) already handles. The site (and MCP endpoint) works even while 3XIA00's PC is off; only the agent is offline then.
+- **B — The PC serves everything, through a tunnel + Neon ($0)**: the room server already runs on the PC (`npm run dev`); add a few lines so it also serves the built page, and expose it with a free tunnel (Cloudflare Tunnel or ngrok) that gives an `https://` address. **Small change.** The site works only while the PC is on, which is when the agent works anyway. Catch: free tunnels either change their address on every restart (Cloudflare's quick tunnels) or give one fixed address (ngrok's free static domain, which shows visitors a one-time warning page).
+- **C — GitHub Pages (page) + PC server via tunnel + Neon ($0)**: the professor's second suggestion. The page lives on GitHub Pages (always loads); chat, MCP, and the agent run on the PC via a tunnel. **Moderate change**: the page must know the tunnel's address at build time (so the tunnel address must be fixed); the server must allow the Pages origin (CORS); room links change to `…/#/r/<id>`, because Pages can't route `/r/<id>`; plus a Pages deploy workflow. Gain over B: friends see the page (not an error) while the PC is off, but they still can't chat.
+- **D — GitHub Pages + Neon only, no server ($0)**: the professor's first suggestion. The browser talks to the database directly (Neon's Data API), which requires **Neon Auth plus row-level security rules**, or anyone could read or delete every chat. **Large change, and it undoes two accepted decisions**: no server means no WebSockets (the page polls for new messages) and **no MCP endpoint**. The agent would have to connect straight to the database with database credentials, and ADR-0001's final design ("agents run on their owners' machines; we provide an MCP and a link") couldn't work without handing strangers database access. M1's server and all of M2 would be thrown away.
+
+**Recommendation**: (by Saddler 5.5, claude-opus-5-5, 2026-11-19)
+
+**A — Render's free tier.** *Rationale*: The professor's objection is cost, and the free tier answers it without changing a line of code or any architecture decision. The one-minute cold start is the real price, and it's acceptable for a toy tested with friends. If you'd rather not use Render at all, **B** is the next best: the PC is already the agent's home, so hosting the site there loses nothing in phase 1. B is simpler than C, because C's main gain (the page loads while the PC is off) doesn't let anyone chat. D gives up the MCP design that the whole multi-agent future rests on, to save a server we can now run for free. *Confidence*: 0.75 — because the free tier is confirmed from Render's own docs; what I can't verify is whether the cold start will annoy your friends more than I expect. *If wrong*: if the cold start or random restarts prove annoying in testing, this flips to **B** (the PC is on whenever the agent is anyway). If you or your professor want no third-party hosting at all, it's **B** too.
+
+**On Neon Auth** (3XIA00 leans "no auth in phase 1"; Saddler agrees): Neon Auth is a sign-in system for app users. It's needed only in **D**, where browsers touch the database directly and something must stop strangers from reading or deleting everything. In A, B, and C the **server** holds the database password and browsers never touch the database, so phase 1 needs no user auth, as ADR-0003 QST-ACCESS-COST decided. It also wouldn't replace the agent token on `/mcp` (ADR-0005), which answers a different question: "is this caller 3XIA00's agent?", not "is this visitor signed in?".
+
+**ANS:** (by [name])
+[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+
+---
+
 ## Decision
 
 ### Chosen — a phased plan (3XIA00's answers, 2026-11-19)

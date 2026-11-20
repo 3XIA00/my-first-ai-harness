@@ -15,6 +15,8 @@
     "db:migrate": "tsx src/server/migrate.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:live": "LIVE=1 vitest run",
+    "agent": "tsx src/agent/index.ts",
     "check": "npm run typecheck && npm run test"
   },
   "dependencies": {

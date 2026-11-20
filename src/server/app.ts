@@ -27,20 +27,35 @@ export interface RoomServer {
 export interface RoomServerOptions {
   /** The (phase 1: single) agent allowed to connect over MCP. Without it, /mcp is disabled. */
   agent?: AgentConfig;
+  /**
+   * Web origins whose pages may use this server (ADR-0007), e.g. the GitHub Pages site.
+   * Default: the local Vite dev server.
+   */
+  allowedOrigins?: string[];
 }
+
+export const DEFAULT_ALLOWED_ORIGINS = ["http://localhost:5173"];
 
 export function createRoomServer(pool: pg.Pool, options: RoomServerOptions = {}): RoomServer {
   const rooms = new RoomService(pool);
   const mcp = new McpEndpoint(rooms, options.agent);
+  const allowed = new Set(options.allowedOrigins ?? DEFAULT_ALLOWED_ORIGINS);
   const server = createServer((req, res) => {
-    const handler = req.url?.split("?")[0] === "/mcp" ? mcp.handle(req, res) : handleHttp(rooms, req, res);
+    const handler =
+      req.url?.split("?")[0] === "/mcp" ? mcp.handle(req, res) : handleHttp(rooms, allowed, req, res);
     handler.catch((err) => {
       console.error("HTTP handler failed:", err);
       if (!res.headersSent) sendJson(res, 500, { error: "Internal error" });
     });
   });
 
-  const wss = new WebSocketServer({ server, path: "/ws" });
+  // Browsers don't apply CORS to WebSockets, so the server checks the page's origin itself.
+  // No Origin header = not a browser page (agent, tests, scripts): allowed.
+  const wss = new WebSocketServer({
+    server,
+    path: "/ws",
+    verifyClient: ({ origin }: { origin?: string }) => !origin || allowed.has(origin),
+  });
   wss.on("connection", (socket) => handleSocket(rooms, socket));
 
   return {
@@ -58,7 +73,28 @@ export function createRoomServer(pool: pg.Pool, options: RoomServerOptions = {})
   };
 }
 
-async function handleHttp(rooms: RoomService, req: IncomingMessage, res: ServerResponse) {
+async function handleHttp(
+  rooms: RoomService,
+  allowed: Set<string>,
+  req: IncomingMessage,
+  res: ServerResponse,
+) {
+  // CORS (ADR-0007): the page on GitHub Pages is a different origin from this server.
+  const origin = req.headers.origin;
+  if (origin && !allowed.has(origin)) {
+    // CORS alone only stops a foreign page from *reading* the answer; the request would still
+    // run (e.g. create a room). Refuse it outright. No Origin = not a browser page: allowed.
+    return sendJson(res, 403, { error: "This site isn't allowed to use this server." });
+  }
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST");
+    res.writeHead(204);
+    return res.end();
+  }
   if (req.method === "POST" && req.url === "/api/rooms") {
     const body: CreateRoomResponse = { roomId: await rooms.createRoom() };
     return sendJson(res, 201, body);

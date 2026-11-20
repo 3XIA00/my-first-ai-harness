@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "tsx watch src/server/index.ts",
+    "start": "node src/server/index.ts",
     "dev:client": "vite",
     "build": "vite build",
     "db:migrate": "tsx src/server/migrate.ts",

@@ -9,6 +9,9 @@ import type { ClientEvent, CreateRoomResponse, ServerEvent } from "../shared/pro
 import { createRoomServer, type RoomServer } from "./app.ts";
 import { createPool, loadEnv, migrate } from "./db.ts";
 
+/** Stands in for https://3xia00.github.io, the GitHub Pages site (ADR-0007). */
+const PAGES_ORIGIN = "https://pages.example";
+
 let pool: pg.Pool;
 let app: RoomServer;
 let baseUrl: string;
@@ -23,7 +26,7 @@ beforeAll(async () => {
   }
   pool = createPool(process.env.DEV_BRANCH);
   await migrate(pool);
-  app = createRoomServer(pool);
+  app = createRoomServer(pool, { allowedOrigins: [PAGES_ORIGIN] });
   await new Promise<void>((resolve) => app.server.listen(0, resolve));
   baseUrl = `localhost:${(app.server.address() as AddressInfo).port}`;
 });
@@ -168,5 +171,48 @@ describe("room server", () => {
     client.send({ type: "join", roomId: "no-such-room", displayName: "Lost" });
     expect((await client.next("error")).error).toBe("This room doesn't exist.");
     client.close();
+  });
+});
+
+describe("cross-origin use (ADR-0007: page on GitHub Pages, server on Render)", () => {
+  it("lets the Pages site create a room and read the answer", async () => {
+    const res = await fetch(`http://${baseUrl}/api/rooms`, {
+      method: "POST",
+      headers: { Origin: PAGES_ORIGIN },
+    });
+    expect(res.status).toBe(201);
+    // Without this header the browser would hide the response from the page.
+    expect(res.headers.get("access-control-allow-origin")).toBe(PAGES_ORIGIN);
+    createdRooms.push(((await res.json()) as CreateRoomResponse).roomId);
+  });
+
+  it("refuses other websites outright, so they can't even create junk rooms", async () => {
+    // CORS alone would only hide the answer from the foreign page; the room would still be
+    // created. Seen in M4's manual check before this was fixed.
+    const res = await fetch(`http://${baseUrl}/api/rooms`, {
+      method: "POST",
+      headers: { Origin: "https://evil.example" },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("accepts chat connections from the Pages site and refuses other sites' pages", async () => {
+    // Browsers send Origin on WebSockets but don't enforce CORS for them; the server must.
+    const roomId = await createRoom();
+    const fromPages = new WebSocket(`ws://${baseUrl}/ws`, { origin: PAGES_ORIGIN });
+    await new Promise<void>((resolve, reject) => {
+      fromPages.once("open", () => resolve());
+      fromPages.once("error", reject);
+    });
+    fromPages.send(JSON.stringify({ type: "join", roomId, displayName: "Friend" }));
+    await new Promise<void>((resolve) => fromPages.once("message", () => resolve()));
+    fromPages.close();
+
+    const fromElsewhere = new WebSocket(`ws://${baseUrl}/ws`, { origin: "https://evil.example" });
+    const status = await new Promise<number>((resolve) => {
+      fromElsewhere.once("unexpected-response", (_req, res) => resolve(res.statusCode ?? 0));
+      fromElsewhere.once("open", () => resolve(101));
+    });
+    expect(status).toBe(401);
   });
 });

@@ -56,7 +56,8 @@ async function openRoomPage(): Promise<string> {
   const { roomId } = (await res.json()) as CreateRoomResponse;
   createdRooms.push(roomId);
   // The page is "served" from the test server's origin, so its WebSocket finds /ws there.
-  jsdom.reconfigure({ url: `http://localhost:${port}/r/${roomId}` });
+  // Room links are hash routes (ADR-0007), exactly as GitHub Pages will serve them.
+  jsdom.reconfigure({ url: `http://localhost:${port}/#/r/${roomId}` });
   return roomId;
 }
 

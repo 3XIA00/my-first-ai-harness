@@ -1,0 +1,52 @@
+# Build the chat page and publish it to GitHub Pages on every push to main (ADR-0007).
+#
+# One-time setup (repo Settings):
+#   - Pages → Build and deployment → Source: "GitHub Actions"
+#   - Secrets and variables → Actions → Variables → New repository variable:
+#       SERVER_URL = https://<your-service>.onrender.com   (no trailing slash)
+#     It's a variable, not a secret: it ends up inside the public page anyway.
+name: Deploy page to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: Build the page
+        run: npm run build
+        env:
+          VITE_SERVER_URL: ${{ vars.SERVER_URL }}
+          VITE_BASE: /${{ github.event.repository.name }}/
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/client
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -8,6 +8,9 @@ const SERVER_PORT = Number(process.env.SERVER_PORT ?? 3001);
 
 export default defineConfig({
   root: "src/client",
+  // GitHub Pages serves this project under /my-first-ai-harness/; the Pages workflow sets
+  // VITE_BASE accordingly (ADR-0007). Locally the page is served from /.
+  base: process.env.VITE_BASE ?? "/",
   plugins: [react()],
   server: {
     port: 5173,

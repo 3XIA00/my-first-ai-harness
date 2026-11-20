@@ -1,6 +1,7 @@
-// The chat page. Two screens, chosen by the URL:
-//   /          → "Create a room" (you get a link to share)
-//   /r/<id>    → pick a name, then chat in that room
+// The chat page. Two screens, chosen by the URL's hash (ADR-0007: GitHub Pages can only serve
+// files, so a path like /r/<id> would 404 on reload; everything after # stays in the browser):
+//   #/          → "Create a room" (you get a link to share)
+//   #/r/<id>    → pick a name, then chat in that room
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type {
   ChatMessage,
@@ -9,24 +10,56 @@ import type {
   Participant,
   ServerEvent,
 } from "../shared/protocol.ts";
+import { apiUrl, WAKING_HINT, WAKING_HINT_AFTER_MS, webSocketUrl } from "./config.ts";
+
+export function roomIdFromHash(hash: string): string | undefined {
+  return /^#\/r\/([A-Za-z0-9_-]+)$/.exec(hash)?.[1];
+}
 
 export function App() {
-  const roomId = location.pathname.match(/^\/r\/([A-Za-z0-9_-]+)$/)?.[1];
-  return roomId ? <Room roomId={roomId} /> : <Home />;
+  const [hash, setHash] = useState(location.hash);
+  useEffect(() => {
+    const onChange = () => setHash(location.hash);
+    window.addEventListener("hashchange", onChange);
+    return () => window.removeEventListener("hashchange", onChange);
+  }, []);
+  const roomId = roomIdFromHash(hash);
+  return roomId ? <Room key={roomId} roomId={roomId} /> : <Home />;
+}
+
+/** Shows the "waking up the server" hint if `busy` lasts longer than a few seconds. */
+function useWakingHint(busy: boolean): boolean {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!busy) {
+      setSlow(false);
+      return;
+    }
+    const timer = setTimeout(() => setSlow(true), WAKING_HINT_AFTER_MS);
+    return () => clearTimeout(timer);
+  }, [busy]);
+  return slow;
 }
 
 function Home() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const slow = useWakingHint(busy);
+
+  // Nudge the free server awake as soon as someone opens the page, so it's likely up by the
+  // time they click (ADR-0007).
+  useEffect(() => {
+    fetch(apiUrl("/api/health")).catch(() => {});
+  }, []);
 
   async function createRoom() {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/rooms", { method: "POST" });
+      const res = await fetch(apiUrl("/api/rooms"), { method: "POST" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { roomId } = (await res.json()) as CreateRoomResponse;
-      location.assign(`/r/${roomId}`);
+      location.hash = `/r/${roomId}`;
     } catch (err) {
       setError(`Couldn't create a room (${String(err)}). Is the server running?`);
       setBusy(false);
@@ -40,6 +73,7 @@ function Home() {
       <button onClick={createRoom} disabled={busy}>
         {busy ? "Creating…" : "Create a room"}
       </button>
+      {busy && slow && <p className="status">{WAKING_HINT}</p>}
       {error && <p className="error">{error}</p>}
     </main>
   );
@@ -83,10 +117,10 @@ function Chat({ roomId, displayName }: { roomId: string; displayName: string }) 
   const [draft, setDraft] = useState("");
   const socketRef = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLLIElement | null>(null);
+  const slow = useWakingHint(me === null && status === "Connecting…");
 
   useEffect(() => {
-    const scheme = location.protocol === "https:" ? "wss" : "ws";
-    const socket = new WebSocket(`${scheme}://${location.host}/ws`);
+    const socket = new WebSocket(webSocketUrl());
     socketRef.current = socket;
     let disposed = false;
     const send = (event: ClientEvent) => socket.send(JSON.stringify(event));
@@ -166,7 +200,7 @@ function Chat({ roomId, displayName }: { roomId: string; displayName: string }) 
         {/* Scroll anchor. An <li>, not a <div>: an <ol> may only contain <li> elements. */}
         <li ref={bottomRef} className="anchor" aria-hidden="true" />
       </ol>
-      {status && <p className="status">{status}</p>}
+      {status && <p className="status">{slow ? WAKING_HINT : status}</p>}
       <form onSubmit={submit} className="row composer">
         <input
           value={draft}

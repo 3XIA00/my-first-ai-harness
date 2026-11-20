@@ -25,6 +25,11 @@ export interface HarnessOptions {
   generateReply: GenerateReply;
   /** How many recent messages the model sees (ADR-0006 QST-HISTORY-WINDOW). */
   historySize?: number;
+  /**
+   * Ping the server this often (ms) so Render's free tier, which sleeps after 15 minutes
+   * without incoming traffic, stays awake while the agent is online (ADR-0007). 0 = off.
+   */
+  keepAliveMs?: number;
   log?: (line: string) => void;
 }
 
@@ -38,9 +43,10 @@ export class AgentHarness {
   #stopped = false;
   #reconnectDelayMs = 1_000;
   #idle: Promise<void> = Promise.resolve();
+  #keepAlive: ReturnType<typeof setInterval> | undefined;
 
   constructor(opts: HarnessOptions) {
-    this.#opts = { historySize: 50, log: (line) => console.log(line), ...opts };
+    this.#opts = { historySize: 50, keepAliveMs: 10 * 60_000, log: (line) => console.log(line), ...opts };
   }
 
   /** Connect, join, catch up, and start listening. Resolves once listening. */
@@ -52,6 +58,7 @@ export class AgentHarness {
   /** Leave the room and disconnect (Ctrl+C). */
   async stop(): Promise<void> {
     this.#stopped = true;
+    clearInterval(this.#keepAlive);
     const client = this.#client;
     this.#client = null;
     if (!client) return;
@@ -92,6 +99,14 @@ export class AgentHarness {
     this.#me = joined.participant_id;
     await client.subscribeResource({ uri: `room://${roomId}` });
     this.#reconnectDelayMs = 1_000;
+
+    clearInterval(this.#keepAlive);
+    if (this.#opts.keepAliveMs > 0) {
+      this.#keepAlive = setInterval(() => {
+        // A failed ping means the connection is gone; onclose handles the reconnect.
+        client.ping().catch(() => {});
+      }, this.#opts.keepAliveMs);
+    }
 
     if (this.#lastSeenId === undefined) {
       // First start: everything already in the room is "seen", except that if the newest

@@ -15,7 +15,9 @@ See CLAUDE.md § Technical Debt Tracking.
 - **Priority**: Medium. Blocks the multi-agent phases, not phase 1.
 - **Related lesson (M2 Inspector check, 2026-11-19)**: in MCP, an HTTP `401` with `WWW-Authenticate: Bearer` tells clients "start OAuth". When the Inspector's header was malformed, it went looking for `/.well-known/oauth-*` and `/register` and failed with a misleading "Dynamic Client Registration rejected (404)". Our fixed bearer token works only with clients that let you set the `Authorization` header by hand (the Inspector, our own harness). Off-the-shelf clients that expect OAuth can't connect. Per-agent tokens (this fix) or real OAuth must account for that before other people's agents arrive.
 
-## TD-2: The server runs TypeScript through `tsx` in production
+## TD-2: The server runs TypeScript through `tsx` in production — RESOLVED 2026-11-19 (ADR-0007)
+
+*Resolved*: `npm start` = `node src/server/index.ts`, using Node 26's built-in type stripping; verified locally under plain `node`. `tsx` remains a dev dependency for `npm run dev:server` (watch mode) and the agent. The original entry is kept below for the record.
 
 - **Issue**: There's no server build step; `tsx` transpiles on the fly.
 - **Location**: `package.json` scripts; M4 deploy (ADR-0004 Negative Consequences).

@@ -249,7 +249,7 @@ If the script was successfully used, append as comments how, and what the outcom
 A toy online platform where agents belonging to different people chat together in a website room — 3XIA00's own harness, built with Saddler 5.5 as co-worker (Claude and the ADRs are the workshop, not the product). Step 1: a website 3XIA00 can share by link so friends chat with 3XIA00's agent. Code will live in `src/`; the ADRs record the design as it grows.
 
 ### Current focus:
-Phase 1 of the chat platform: private 1:1 web chats with 3XIA00's agent, which runs on 3XIA00's PC as an MCP client woken by server notifications (Claude Haiku 5.5 via the professor's OpenRouter key). M0 (toolchain) and M1 (humans-only chat, ADR-0004) done; M2 (MCP endpoint at `/mcp`, ADR-0005) built and tested, awaiting 3XIA00's MCP Inspector check; next is M3, the agent harness. Milestones: ADR-0003 Action Items. Run locally: `npm run dev` → http://localhost:5173. Local DB = `DEV_BRANCH` in `.env`.
+Phase 1 of the chat platform: private 1:1 web chats with 3XIA00's agent, which runs on 3XIA00's PC as an MCP client woken by server notifications (Claude Haiku 5.5 via the professor's OpenRouter key). M0 (toolchain), M1 (humans-only chat, ADR-0004) and M2 (MCP endpoint at `/mcp`, ADR-0005) done; next is M3, the agent harness on 3XIA00's PC. Milestones: ADR-0003 Action Items. Run locally: `npm run dev` → http://localhost:5173. Local DB = `DEV_BRANCH` in `.env`.
 
 ### Key decisions made:
 - Project scope: multi-agent chat platform; agents run on owners' machines and join via our MCP server + a room link. See `docs/adr/0001-harness-scope-what-are-we-building.md`.

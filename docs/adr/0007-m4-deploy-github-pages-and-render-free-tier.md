@@ -55,7 +55,7 @@ Until now everything ran on `localhost`, with Vite forwarding `/api` and `/ws` t
 ## Open question
 
 ### QST-HISTORY-NAME: Scrub a real name from git history before the first public push?
-- Status: unanswered
+- Status: answered — A: scrub before the first push. Survey (2026-11-24): the name appears only in `src/server/mcp.test.ts`, in 5 unpushed commits, and in no commit message. The harness's permission layer refused to let Saddler rewrite history, so 3XIA00 runs the rewrite (a one-line `git filter-branch` limited to unpushed commits), then Saddler verifies.
 - Why asking: the repo becomes public for Pages, and that includes all git history. One local, **never-pushed** commit (`7c9d052`, "feat: M2 MCP endpoint…") contains the name from a two-tab test screenshot as a test fixture. It was replaced with "Mina" in a later commit, so it no longer appears in the current files. Once pushed publicly, history is effectively permanent: forks and caches keep it even if rewritten later.
 - Need: pick a letter (or override — any shape answers)
 
@@ -67,8 +67,8 @@ Options:
 
 **A — Scrub it before pushing.** *Rationale*: It's a free fix *only* until the first push, and irreversible after. If it's a friend's name, it isn't ours to publish; if it's yours, A costs nothing either. *Confidence*: 0.7 — because this is about your preference, and the only fact I know is that the window to fix it closes at the push. *If wrong*: if it's your own name and you're happy to have it visible, this flips to **B**.
 
-**ANS:** (by [name])
-[Fill this in]   <!-- literal placeholder — parser-significant, do not paraphrase -->
+**ANS:** (by 3XIA00)
+go with A
 
 ---
 
